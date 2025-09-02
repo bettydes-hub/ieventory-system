@@ -8,9 +8,9 @@
 - [x] Build Users model (Admin, Store Keeper, Employee, Delivery Staff)
 
 ### 🔄 Partner's Tasks (Day 1)
-- [ ] Setup migrations folder
-- [ ] Build Stores, Items, Categories models
-- [ ] Add foreign keys (store → items, category → items)
+- [x] Setup migrations folder
+- [x] Build Stores, Items, Categories models
+- [x] Add foreign keys (store → items, category → items)
 
 ---
 
