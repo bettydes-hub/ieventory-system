@@ -6,56 +6,54 @@ const User = sequelize.define('User', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
+    primaryKey: true,
+    field: 'user_id'
   },
-  username: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true,
-    validate: {
-      len: [3, 50]
-    }
+  name: {
+    type: DataTypes.STRING(200),
+    allowNull: false
   },
   email: {
-    type: DataTypes.STRING(100),
+    type: DataTypes.STRING(200),
     allowNull: false,
     unique: true,
     validate: {
       isEmail: true
     }
   },
-  password: {
+  password_hash: {
     type: DataTypes.STRING(255),
-    allowNull: false,
-    validate: {
-      len: [6, 255]
-    }
-  },
-  firstName: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    validate: {
-      len: [2, 50]
-    }
-  },
-  lastName: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    validate: {
-      len: [2, 50]
-    }
+    allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('admin', 'store_keeper', 'employee', 'delivery_staff'),
+    type: DataTypes.ENUM('Admin', 'Employee', 'Delivery Staff'),
     allowNull: false,
-    defaultValue: 'employee'
+    defaultValue: 'Employee'
   },
+  store_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'stores',
+      key: 'store_id'
+    }
+  },
+  refresh_token: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  password_reset_token: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  password_reset_expiry: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  // Additional fields for flexibility
   phone: {
     type: DataTypes.STRING(20),
-    allowNull: true,
-    validate: {
-      len: [10, 20]
-    }
+    allowNull: true
   },
   isActive: {
     type: DataTypes.BOOLEAN,
@@ -69,24 +67,21 @@ const User = sequelize.define('User', {
   vehicleInfo: {
     type: DataTypes.JSON,
     allowNull: true
-  },
-  // For store keepers - which stores they manage
-  assignedStores: {
-    type: DataTypes.JSON, // Array of store IDs
-    allowNull: true
   }
 }, {
   tableName: 'users',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   hooks: {
     beforeCreate: async (user) => {
-      if (user.password) {
-        user.password = await bcrypt.hash(user.password, 12);
+      if (user.password_hash) {
+        user.password_hash = await bcrypt.hash(user.password_hash, 12);
       }
     },
     beforeUpdate: async (user) => {
-      if (user.changed('password')) {
-        user.password = await bcrypt.hash(user.password, 12);
+      if (user.changed('password_hash')) {
+        user.password_hash = await bcrypt.hash(user.password_hash, 12);
       }
     }
   }
@@ -94,12 +89,12 @@ const User = sequelize.define('User', {
 
 // Instance method to check password
 User.prototype.checkPassword = async function(password) {
-  return await bcrypt.compare(password, this.password);
+  return await bcrypt.compare(password, this.password_hash);
 };
 
 // Instance method to get full name
 User.prototype.getFullName = function() {
-  return `${this.firstName} ${this.lastName}`;
+  return this.name;
 };
 
 // Instance method to check if user has specific role
