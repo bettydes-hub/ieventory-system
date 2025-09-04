@@ -11,6 +11,13 @@ const transactionRoutes = require('./routes/transactions');
 const damageRoutes = require('./routes/damages');
 const notificationRoutes = require('./routes/notifications');
 const deliveryRoutes = require('./routes/deliveries');
+const inventoryRoutes = require('./routes/inventory');
+const storeRoutes = require('./routes/stores');
+const categoryRoutes = require('./routes/categories');
+const supplierRoutes = require('./routes/suppliers');
+const maintenanceRoutes = require('./routes/maintenance');
+const searchRoutes = require('./routes/search');
+const auditRoutes = require('./routes/audit');
 
 // Import middleware
 const { auditMiddleware } = require('./middleware/auditMiddleware');
@@ -58,6 +65,13 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/damages', damageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/deliveries', deliveryRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/stores', storeRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/audit', auditRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
