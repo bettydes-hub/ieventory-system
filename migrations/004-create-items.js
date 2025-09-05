@@ -4,9 +4,9 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('items', {
       item_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.literal('gen_random_uuid()'),
         primaryKey: true,
-        autoIncrement: true,
       },
       name: {
         type: Sequelize.STRING,
@@ -26,7 +26,7 @@ module.exports = {
         defaultValue: 'available',
       },
       store_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         references: {
           model: 'stores',
           key: 'store_id',
@@ -35,7 +35,7 @@ module.exports = {
         onDelete: 'SET NULL',
       },
       category_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         references: {
           model: 'categories',
           key: 'category_id',
