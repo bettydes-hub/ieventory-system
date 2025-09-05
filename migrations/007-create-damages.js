@@ -5,7 +5,7 @@ module.exports = {
     await queryInterface.createTable('damages', {
       damage_id: {
         type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4,
+        defaultValue: Sequelize.literal('gen_random_uuid()'),
         primaryKey: true
       },
       

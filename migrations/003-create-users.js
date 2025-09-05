@@ -37,7 +37,7 @@ module.exports = {
       },
 
           store_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: true,
         references: { model: 'stores', key: 'store_id' },
         onUpdate: 'CASCADE',
