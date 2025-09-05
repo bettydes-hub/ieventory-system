@@ -1,4 +1,7 @@
 const { sequelize } = require('../config/database');
+const { DataTypes } = require('sequelize');
+
+// Models defined with direct sequelize import
 const User = require('./User');
 const Transaction = require('./Transaction');
 const Delivery = require('./Delivery');
@@ -8,34 +11,34 @@ const AuditLog = require('./AuditLog');
 const Notification = require('./Notification');
 const Supplier = require('./Supplier');
 
-// Import other models (will be created by your partner)
-// const Store = require('./Store');
-// const Item = require('./Item');
-// const Category = require('./Category');
+// Models defined as factories (require initialization)
+const defineStore = require('./store');
+const defineItem = require('./item');
+const defineCategory = require('./Category');
 
-// Define associations here
-// Store.hasMany(Item);
-// Item.belongsTo(Store);
-// Category.hasMany(Item);
-// Item.belongsTo(Category);
+const Store = defineStore(sequelize, DataTypes);
+const Item = defineItem(sequelize, DataTypes);
+const Category = defineCategory(sequelize, DataTypes);
 
-// Transaction associations (will be updated when partner creates Store/Item models)
-// Transaction.belongsTo(Item, { foreignKey: 'item_id' });
-// Transaction.belongsTo(Store, { as: 'fromStore', foreignKey: 'from_store_id' });
-// Transaction.belongsTo(Store, { as: 'toStore', foreignKey: 'to_store_id' });
-// Transaction.belongsTo(User, { foreignKey: 'user_id' });
+// Associations
+// Items <-> Store/Category
+if (Store.associate) Store.associate({ Item, User });
+if (Category.associate) Category.associate({ Item });
+if (Item.associate) Item.associate({ Store, Category });
+
+// Transaction associations
+Transaction.belongsTo(Item, { foreignKey: 'item_id' });
+Transaction.belongsTo(Store, { as: 'fromStore', foreignKey: 'from_store_id' });
+Transaction.belongsTo(Store, { as: 'toStore', foreignKey: 'to_store_id' });
+Transaction.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
 
 // Delivery associations
 Delivery.belongsTo(Transaction, { foreignKey: 'transaction_id' });
-Delivery.belongsTo(User, { as: 'deliveryStaff', foreignKey: 'assigned_to' });
+Delivery.belongsTo(User, { as: 'assignedTo', foreignKey: 'assigned_to' });
 
 // Damage associations
 Damage.belongsTo(User, { as: 'reporter', foreignKey: 'reported_by' });
 Damage.belongsTo(User, { as: 'resolver', foreignKey: 'resolved_by' });
-
-// Maintenance associations
-MaintenanceLog.belongsTo(User, { as: 'assignee', foreignKey: 'assigned_to' });
-MaintenanceLog.belongsTo(User, { as: 'performer', foreignKey: 'performed_by' });
 
 // Audit associations
 AuditLog.belongsTo(User, { foreignKey: 'user_id' });
@@ -43,7 +46,6 @@ AuditLog.belongsTo(User, { foreignKey: 'user_id' });
 // Notification associations
 Notification.belongsTo(User, { foreignKey: 'user_id' });
 
-// Export all models
 const models = {
   User,
   Transaction,
@@ -53,9 +55,9 @@ const models = {
   AuditLog,
   Notification,
   Supplier,
-  // Store,
-  // Item,
-  // Category,
+  Store,
+  Item,
+  Category,
   sequelize
 };
 

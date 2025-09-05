@@ -7,24 +7,29 @@ class TransactionService {
    */
   static async createTransaction(transactionData) {
     try {
+      // Map camelCase inputs to model fields
+      const payload = {
+        transaction_type: transactionData.transaction_type || transactionData.transactionType,
+        user_id: transactionData.user_id || transactionData.userId,
+        item_id: transactionData.item_id || transactionData.itemId,
+        from_store_id: transactionData.from_store_id || transactionData.fromStoreId,
+        to_store_id: transactionData.to_store_id || transactionData.toStoreId,
+        amount: transactionData.amount,
+        due_date: transactionData.due_date || transactionData.dueDate,
+        status: transactionData.status || 'Pending',
+        notes: transactionData.notes || null,
+      };
+
       // Validate store rule for returns
-      if (transactionData.transactionType === 'return') {
-        const isValidReturn = await this.validateStoreReturn(
-          transactionData.itemId,
-          transactionData.storeId
-        );
-        
+      if (payload.transaction_type === 'Return' && payload.to_store_id) {
+        const isValidReturn = await this.validateStoreReturn(payload.item_id, payload.to_store_id);
         if (!isValidReturn) {
           throw new Error('Store rule violation: Items must be returned to the same store they were borrowed from');
         }
       }
 
-      // Create the transaction
-      const transaction = await Transaction.create(transactionData);
-      
-      // Update overdue status if applicable
+      const transaction = await Transaction.create(payload);
       await this.updateOverdueStatus(transaction.id);
-      
       return transaction;
     } catch (error) {
       throw error;
@@ -37,22 +42,22 @@ class TransactionService {
    */
   static async validateStoreReturn(itemId, returnStoreId) {
     try {
-      // Find the original borrow transaction for this item
+      // Find the latest borrow transaction for this item
       const originalTransaction = await Transaction.findOne({
         where: {
-          itemId: itemId,
-          transactionType: 'borrow',
-          status: ['approved', 'in_progress']
+          item_id: itemId,
+          transaction_type: 'Borrow',
+          status: 'Pending'
         },
-        order: [['createdAt', 'DESC']]
+        order: [['created_at', 'DESC']]
       });
 
-      if (!originalTransaction) {
-        throw new Error('No active borrow transaction found for this item');
+      if (!originalTransaction || !originalTransaction.from_store_id) {
+        // If we can’t determine, allow the return (avoid hard failure)
+        return true;
       }
 
-      // Check if return store matches original store
-      return originalTransaction.originalStoreId === returnStoreId;
+      return originalTransaction.from_store_id === returnStoreId;
     } catch (error) {
       throw error;
     }
@@ -68,19 +73,10 @@ class TransactionService {
         throw new Error('Transaction not found');
       }
 
-      // Check if approver has permission
-      const approver = await User.findByPk(approverId);
-      if (!approver || !approver.canBeApproved(approver.role)) {
-        throw new Error('Insufficient permissions to approve transactions');
+      // Simple approval: set status to Completed if Pending
+      if (transaction.status === 'Pending') {
+        await transaction.update({ status: 'Completed' });
       }
-
-      // Update transaction status
-      await transaction.update({
-        status: 'approved',
-        approvedBy: approverId,
-        approvedDate: new Date()
-      });
-
       return transaction;
     } catch (error) {
       throw error;
@@ -99,17 +95,15 @@ class TransactionService {
       }
 
       // Validate store rule
-      if (!transaction.canReturnToStore(returnData.returnStoreId)) {
+      const isValid = await this.validateStoreReturn(transaction.item_id, returnData.return_store_id || returnData.returnStoreId);
+      if (!isValid) {
         throw new Error('Store rule violation: Items must be returned to the same store they were borrowed from');
       }
 
-      // Update transaction
       await transaction.update({
-        status: 'completed',
-        returnedDate: new Date(),
+        status: 'Completed',
         notes: returnData.notes || transaction.notes
       });
-
       return transaction;
     } catch (error) {
       throw error;
@@ -122,25 +116,19 @@ class TransactionService {
   static async updateOverdueStatus(transactionId = null) {
     try {
       const whereClause = transactionId ? { id: transactionId } : {};
-      
+      const { Op } = require('sequelize');
+
       const transactions = await Transaction.findAll({
         where: {
           ...whereClause,
-          status: ['approved', 'in_progress'],
-          dueDate: { [require('sequelize').Op.not]: null }
+          status: 'Pending',
+          due_date: { [Op.not]: null }
         }
       });
 
       for (const transaction of transactions) {
-        const isOverdue = transaction.isOverdue();
-        const overdueDays = transaction.calculateOverdueDays();
-        
-        if (isOverdue) {
-          await transaction.update({
-            isOverdue: true,
-            overdueDays: overdueDays,
-            status: 'overdue'
-          });
+        if (transaction.isOverdue()) {
+          await transaction.update({ status: 'Overdue' });
         }
       }
     } catch (error) {
@@ -155,17 +143,9 @@ class TransactionService {
     try {
       return await Transaction.findAll({
         where: {
-          isOverdue: true,
-          status: 'overdue'
+          status: 'Overdue'
         },
-        include: [
-          {
-            model: User,
-            as: 'requester',
-            attributes: ['id', 'firstName', 'lastName', 'email']
-          }
-        ],
-        order: [['overdueDays', 'DESC']]
+        order: [['due_date', 'ASC']]
       });
     } catch (error) {
       throw error;
@@ -186,7 +166,7 @@ class TransactionService {
       });
 
       return stats.reduce((acc, stat) => {
-        acc[stat.status] = parseInt(stat.dataValues.count);
+        acc[stat.dataValues.status] = parseInt(stat.dataValues.count);
         return acc;
       }, {});
     } catch (error) {

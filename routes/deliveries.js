@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Delivery, User, Item } = require('../models');
 const { authenticateToken } = require('../middleware/authMiddleware');
-const { requireAuth, canAssignDeliveries } = require('../middleware/roleMiddleware');
+const { requireAuth, canAssignDeliveries, requireAdmin } = require('../middleware/roleMiddleware');
 
 /**
  * @route   GET /api/deliveries
@@ -25,17 +25,12 @@ router.get('/', authenticateToken, requireAuth, async (req, res) => {
         {
           model: User,
           as: 'assignedTo',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        },
-        {
-          model: User,
-          as: 'completedBy',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'name', 'email']
         }
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
 
     res.json({
@@ -71,12 +66,7 @@ router.get('/:id', authenticateToken, requireAuth, async (req, res) => {
         {
           model: User,
           as: 'assignedTo',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        },
-        {
-          model: User,
-          as: 'completedBy',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'name', 'email']
         }
       ]
     });
@@ -174,7 +164,7 @@ router.put('/:id/assign', authenticateToken, canAssignDeliveries, async (req, re
     await delivery.update({
       assigned_to,
       notes: notes || delivery.notes,
-      status: 'Assigned'
+      status: 'In-Progress'
     });
 
     res.json({
@@ -270,15 +260,10 @@ router.get('/user/:userId', authenticateToken, requireAuth, async (req, res) => 
         {
           model: User,
           as: 'assignedTo',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        },
-        {
-          model: User,
-          as: 'completedBy',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'name', 'email']
         }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
 
     res.json({
@@ -313,15 +298,10 @@ router.get('/my-deliveries', authenticateToken, requireAuth, async (req, res) =>
         {
           model: User,
           as: 'assignedTo',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        },
-        {
-          model: User,
-          as: 'completedBy',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'name', 'email']
         }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
 
     res.json({
@@ -347,23 +327,22 @@ router.get('/stats', authenticateToken, requireAuth, async (req, res) => {
     const stats = await Delivery.findAll({
       attributes: [
         'status',
-        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+        [require('sequelize').fn('COUNT', require('sequelize').col('delivery_id')), 'count']
       ],
       group: ['status']
     });
 
     const result = {
       Pending: 0,
-      Assigned: 0,
-      'In Progress': 0,
+      'In-Progress': 0,
       Completed: 0,
-      Cancelled: 0,
       total: 0
     };
 
     stats.forEach(stat => {
       const status = stat.dataValues.status;
       const count = parseInt(stat.dataValues.count);
+      if (!result[status]) result[status] = 0;
       result[status] = count;
       result.total += count;
     });
