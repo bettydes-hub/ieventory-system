@@ -22,6 +22,7 @@ const auditRoutes = require('./routes/audit');
 // Import middleware
 const { auditMiddleware } = require('./middleware/auditMiddleware');
 const { applyAuditToModels } = require('./middleware/auditMiddleware');
+const passport = require('./config/passport');
 
 // Import models to apply audit hooks
 const models = require('./models');
@@ -41,6 +42,9 @@ app.use(morgan('combined'));
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Initialize Passport (stateless)
+app.use(passport.initialize());
 
 // Apply audit middleware to all routes
 app.use(auditMiddleware);
