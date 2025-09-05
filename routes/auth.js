@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const AuthService = require('../services/authService');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticateToken, generateToken } = require('../middleware/authMiddleware');
 const { requireAuth } = require('../middleware/roleMiddleware');
+const passport = require('../config/passport');
+const bcrypt = require('bcrypt');
+const { User } = require('../models');
 
 /**
  * @route   POST /api/auth/register
@@ -86,6 +89,75 @@ router.post('/login', async (req, res) => {
       message: error.message
     });
   }
+});
+
+/**
+ * @route   POST /api/auth/register-local
+ * @desc    Register with local strategy (ienetworks.co only)
+ * @access  Public
+ */
+router.post('/register-local', async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
+    }
+    const normalized = email.toLowerCase();
+    if (!normalized.endsWith('@ienetworks.co')) {
+      return res.status(400).json({ success: false, message: 'Email must be @ienetworks.co' });
+    }
+    const existing = await User.findOne({ where: { email: normalized } });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'User with this email already exists' });
+    }
+    // Let model hook hash the password
+    const user = await User.create({ name, email: normalized, password_hash: password, role: role || 'Employee' });
+    const token = generateToken(user);
+    const response = user.toJSON();
+    delete response.password_hash;
+    res.status(201).json({ success: true, message: 'User registered successfully', data: { user: response, token } });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * @route   POST /api/auth/login-local
+ * @desc    Login with local strategy (ienetworks.co only)
+ * @access  Public
+ */
+router.post('/login-local', (req, res, next) => {
+  passport.authenticate('local', { session: false }, (err, user, info) => {
+    if (err) return next(err);
+    if (!user) return res.status(401).json({ success: false, message: info?.message || 'Login failed' });
+    const token = generateToken(user);
+    const data = user.toJSON();
+    delete data.password_hash;
+    res.json({ success: true, message: 'Login successful', data: { user: data, token } });
+  })(req, res, next);
+});
+
+/**
+ * @route   GET /api/auth/basecamp
+ * @desc    Begin Basecamp OAuth2 login
+ * @access  Public
+ */
+router.get('/basecamp', passport.authenticate('basecamp', { session: false }));
+
+/**
+ * @route   GET /api/auth/basecamp/callback
+ * @desc    Basecamp OAuth2 callback
+ * @access  Public
+ */
+router.get('/basecamp/callback', (req, res, next) => {
+  passport.authenticate('basecamp', { session: false }, (err, user, info) => {
+    if (err) return next(err);
+    if (!user) return res.status(401).json({ success: false, message: info?.message || 'Basecamp authentication failed' });
+    const token = generateToken(user);
+    const data = user.toJSON();
+    delete data.password_hash;
+    res.json({ success: true, message: 'Login successful', data: { user: data, token } });
+  })(req, res, next);
 });
 
 /**
