@@ -17,27 +17,18 @@ router.get('/', authenticateToken, requireAuth, async (req, res) => {
     // Build where clause
     const whereClause = {};
     if (status) whereClause.status = status;
-    if (type) whereClause.transactionType = type;
-    if (userId) whereClause.userId = userId;
+    if (type) whereClause.transaction_type = type;
+    if (userId) whereClause.user_id = userId;
 
     const { Transaction, User } = require('../models');
     const transactions = await Transaction.findAndCountAll({
       where: whereClause,
       include: [
-        {
-          model: User,
-          as: 'requester',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        },
-        {
-          model: User,
-          as: 'approver',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        }
+        { model: User, as: 'user', attributes: ['id', 'name', 'email'] }
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
 
     res.json({
@@ -71,16 +62,7 @@ router.get('/:id', authenticateToken, requireAuth, async (req, res) => {
     const { Transaction, User } = require('../models');
     const transaction = await Transaction.findByPk(req.params.id, {
       include: [
-        {
-          model: User,
-          as: 'requester',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        },
-        {
-          model: User,
-          as: 'approver',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        }
+        { model: User, as: 'user', attributes: ['id', 'name', 'email'] }
       ]
     });
 

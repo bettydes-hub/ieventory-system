@@ -31,7 +31,7 @@ module.exports = {
       },
 
       role: {
-        type: Sequelize.ENUM('Admin', 'Employee', 'Delivery Staff'),
+        type: Sequelize.ENUM('Admin', 'Store Keeper', 'Employee', 'Delivery Staff'),
         allowNull: false,
         defaultValue: 'Employee',
       },
