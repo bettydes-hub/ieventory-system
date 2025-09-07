@@ -27,12 +27,12 @@ router.get('/', authenticateToken, requireAuth, async (req, res) => {
         {
           model: User,
           as: 'reporter',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'name', 'email']
         },
         {
           model: User,
           as: 'resolver',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'name', 'email']
         }
       ],
       limit: parseInt(limit),
@@ -74,12 +74,12 @@ router.get('/:id', authenticateToken, requireAuth, async (req, res) => {
         {
           model: User,
           as: 'reporter',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'name', 'email']
         },
         {
           model: User,
           as: 'resolver',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'name', 'email']
         }
       ]
     });

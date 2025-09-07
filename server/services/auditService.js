@@ -90,7 +90,7 @@ class AuditService {
         include: [
           {
             model: User,
-            attributes: ['id', 'firstName', 'lastName', 'email']
+            attributes: ['id', 'name', 'email']
           }
         ],
         order: [['timestamp', 'DESC']],
@@ -211,7 +211,7 @@ class AuditService {
         include: [
           {
             model: User,
-            attributes: ['id', 'firstName', 'lastName', 'email', 'role']
+            attributes: ['id', 'name', 'email', 'role']
           }
         ],
         limit: parseInt(limit),

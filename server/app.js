@@ -70,6 +70,8 @@ app.use('/api/damages', damageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/inventory', inventoryRoutes);
+// Alias for items CRUD
+app.use('/api/items', inventoryRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/suppliers', supplierRoutes);

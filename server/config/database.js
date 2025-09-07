@@ -1,6 +1,8 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
+const LOG_SQL = (process.env.DB_LOG_SQL || '').toLowerCase() === 'true';
+
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'ieventory_db',
   process.env.DB_USER || 'postgres',
@@ -9,7 +11,8 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    // Control SQL logging via env (DB_LOG_SQL=true to enable)
+    logging: LOG_SQL ? console.log : false,
     pool: {
       max: 5,
       min: 0,

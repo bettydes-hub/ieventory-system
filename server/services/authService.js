@@ -10,25 +10,27 @@ class AuthService {
    */
   static async register(userData) {
     try {
+      // Normalize email
+      const email = (userData.email || '').toLowerCase();
+
       // Check if user already exists
-      const existingUser = await User.findOne({
-        where: { email: userData.email }
-      });
+      const existingUser = await User.findOne({ where: { email } });
 
       if (existingUser) {
         throw new Error('User with this email already exists');
       }
 
-      // Hash password
-      const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
+      // Prepare name and role
+      const name = userData.name || [userData.firstName, userData.lastName].filter(Boolean).join(' ').trim();
+      const role = userData.role || 'Employee';
 
-      // Create user
+      // Create user (model hook will hash password_hash)
       const user = await User.create({
-        ...userData,
-        password: hashedPassword,
-        role: userData.role || 'User', // Default role
-        isActive: true
+        name: name || 'User',
+        email,
+        password_hash: userData.password,
+        role,
+        isActive: userData.isActive !== undefined ? userData.isActive : true
       });
 
       // Generate token
@@ -36,7 +38,11 @@ class AuthService {
 
       // Remove password from response
       const userResponse = user.toJSON();
-      delete userResponse.password;
+      delete userResponse.password_hash;
+      // Provide firstName/lastName for UI compatibility
+      const parts = (userResponse.name || '').trim().split(/\s+/);
+      userResponse.firstName = parts[0] || '';
+      userResponse.lastName = parts.slice(1).join(' ') || '';
 
       return {
         user: userResponse,
@@ -56,9 +62,7 @@ class AuthService {
   static async login(email, password) {
     try {
       // Find user by email
-      const user = await User.findOne({
-        where: { email: email.toLowerCase() }
-      });
+      const user = await User.findOne({ where: { email: (email || '').toLowerCase() } });
 
       if (!user) {
         throw new Error('Invalid email or password');
@@ -69,8 +73,8 @@ class AuthService {
         throw new Error('Account is deactivated');
       }
 
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      // Verify password using model helper
+      const isValidPassword = await user.checkPassword(password);
       if (!isValidPassword) {
         throw new Error('Invalid email or password');
       }
@@ -80,7 +84,10 @@ class AuthService {
 
       // Remove password from response
       const userResponse = user.toJSON();
-      delete userResponse.password;
+      delete userResponse.password_hash;
+      const parts = (userResponse.name || '').trim().split(/\s+/);
+      userResponse.firstName = parts[0] || '';
+      userResponse.lastName = parts.slice(1).join(' ') || '';
 
       return {
         user: userResponse,
@@ -106,7 +113,7 @@ class AuthService {
       }
 
       // Verify current password
-      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      const isValidPassword = await user.checkPassword(currentPassword);
       if (!isValidPassword) {
         throw new Error('Current password is incorrect');
       }
@@ -116,7 +123,7 @@ class AuthService {
       const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
       // Update password
-      await user.update({ password: hashedPassword });
+      await user.update({ password_hash: hashedPassword });
 
       return true;
     } catch (error) {
@@ -142,7 +149,7 @@ class AuthService {
       const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
       // Update password
-      await user.update({ password: hashedPassword });
+      await user.update({ password_hash: hashedPassword });
 
       return true;
     } catch (error) {
@@ -192,14 +199,18 @@ class AuthService {
   static async getUserProfile(userId) {
     try {
       const user = await User.findByPk(userId, {
-        attributes: { exclude: ['password'] }
+        attributes: { exclude: ['password_hash'] }
       });
 
       if (!user) {
         throw new Error('User not found');
       }
 
-      return user;
+      const data = user.toJSON();
+      const parts = (data.name || '').trim().split(/\s+/);
+      data.firstName = parts[0] || '';
+      data.lastName = parts.slice(1).join(' ') || '';
+      return data;
     } catch (error) {
       throw error;
     }
@@ -223,10 +234,21 @@ class AuthService {
       delete updateData.role;
       delete updateData.isActive;
 
+      // If front-end sends firstName/lastName, combine into name
+      if (updateData.firstName || updateData.lastName) {
+        const first = (updateData.firstName || '').trim();
+        const last = (updateData.lastName || '').trim();
+        updateData.name = [first, last].filter(Boolean).join(' ') || user.name;
+        delete updateData.firstName;
+        delete updateData.lastName;
+      }
       await user.update(updateData);
 
       const userResponse = user.toJSON();
-      delete userResponse.password;
+      delete userResponse.password_hash;
+      const parts = (userResponse.name || '').trim().split(/\s+/);
+      userResponse.firstName = parts[0] || '';
+      userResponse.lastName = parts.slice(1).join(' ') || '';
 
       return userResponse;
     } catch (error) {
