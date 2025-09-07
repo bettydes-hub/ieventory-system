@@ -40,49 +40,62 @@ passport.use(new LocalStrategy({ usernameField: 'email', passwordField: 'passwor
   }
 ));
 
-// Basecamp OAuth2 strategy
-passport.use('basecamp', new OAuth2Strategy({
-  authorizationURL: process.env.BASECAMP_AUTH_URL,
-  tokenURL: process.env.BASECAMP_TOKEN_URL,
-  clientID: process.env.BASECAMP_CLIENT_ID,
-  clientSecret: process.env.BASECAMP_CLIENT_SECRET,
-  callbackURL: process.env.BASECAMP_CALLBACK_URL,
-  scope: process.env.BASECAMP_SCOPE ? process.env.BASECAMP_SCOPE.split(',') : undefined,
-  state: true
-}, async (accessToken, refreshToken, params, profile, done) => {
-  try {
-    // Fetch profile from Basecamp API if URL provided
-    let bcProfile = null;
-    if (process.env.BASECAMP_PROFILE_URL) {
-      bcProfile = await fetchBasecampProfile(process.env.BASECAMP_PROFILE_URL, accessToken);
+// Basecamp OAuth2 strategy (optional)
+const hasBasecampConfig = (
+  process.env.BASECAMP_AUTH_URL &&
+  process.env.BASECAMP_TOKEN_URL &&
+  process.env.BASECAMP_CLIENT_ID &&
+  process.env.BASECAMP_CLIENT_SECRET &&
+  process.env.BASECAMP_CALLBACK_URL
+);
+
+if (hasBasecampConfig) {
+  passport.use('basecamp', new OAuth2Strategy({
+    authorizationURL: process.env.BASECAMP_AUTH_URL,
+    tokenURL: process.env.BASECAMP_TOKEN_URL,
+    clientID: process.env.BASECAMP_CLIENT_ID,
+    clientSecret: process.env.BASECAMP_CLIENT_SECRET,
+    callbackURL: process.env.BASECAMP_CALLBACK_URL,
+    scope: process.env.BASECAMP_SCOPE ? process.env.BASECAMP_SCOPE.split(',') : undefined,
+    state: true
+  }, async (accessToken, refreshToken, params, profile, done) => {
+    try {
+      // Fetch profile from Basecamp API if URL provided
+      let bcProfile = null;
+      if (process.env.BASECAMP_PROFILE_URL) {
+        bcProfile = await fetchBasecampProfile(process.env.BASECAMP_PROFILE_URL, accessToken);
+      }
+
+      // Derive email/name
+      const email = bcProfile?.email?.toLowerCase?.() || bcProfile?.identity?.email?.toLowerCase?.();
+      const name = bcProfile?.name || [bcProfile?.first_name, bcProfile?.last_name].filter(Boolean).join(' ') || 'Basecamp User';
+
+      if (!email) {
+        return done(null, false, { message: 'Unable to retrieve email from Basecamp profile' });
+      }
+
+      // Find or create user
+      let user = await User.findOne({ where: { email } });
+      if (!user) {
+        const randomPassword = crypto.randomBytes(24).toString('hex');
+        user = await User.create({
+          name,
+          email,
+          password_hash: randomPassword, // will be hashed by model hook
+          role: 'Employee',
+          isActive: true
+        });
+      }
+
+      return done(null, user);
+    } catch (err) {
+      return done(err);
     }
-
-    // Derive email/name
-    const email = bcProfile?.email?.toLowerCase?.() || bcProfile?.identity?.email?.toLowerCase?.();
-    const name = bcProfile?.name || [bcProfile?.first_name, bcProfile?.last_name].filter(Boolean).join(' ') || 'Basecamp User';
-
-    if (!email) {
-      return done(null, false, { message: 'Unable to retrieve email from Basecamp profile' });
-    }
-
-    // Find or create user
-    let user = await User.findOne({ where: { email } });
-    if (!user) {
-      const randomPassword = crypto.randomBytes(24).toString('hex');
-      user = await User.create({
-        name,
-        email,
-        password_hash: randomPassword, // will be hashed by model hook
-        role: 'Employee',
-        isActive: true
-      });
-    }
-
-    return done(null, user);
-  } catch (err) {
-    return done(err);
-  }
-}));
+  }));
+} else {
+  // eslint-disable-next-line no-console
+  console.warn('Basecamp OAuth not configured; skipping OAuth2Strategy');
+}
 
 module.exports = passport;
 

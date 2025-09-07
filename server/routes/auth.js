@@ -14,13 +14,14 @@ const { User } = require('../models');
  */
 router.post('/register', async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role } = req.body;
+    const { name, firstName, lastName, email, password, role } = req.body;
 
-    // Validate required fields
-    if (!firstName || !lastName || !email || !password) {
+    // Validate required fields (accept either name or first+last)
+    const derivedName = name || [firstName, lastName].filter(Boolean).join(' ').trim();
+    if (!derivedName || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'All fields are required'
+        message: 'Name, email, and password are required'
       });
     }
 
@@ -36,8 +37,7 @@ router.post('/register', async (req, res) => {
 
     // Register user
     const result = await AuthService.register({
-      firstName,
-      lastName,
+      name: derivedName,
       email,
       password,
       role
@@ -255,14 +255,18 @@ router.post('/change-password', authenticateToken, async (req, res) => {
  * @access  Private
  */
 router.post('/verify-token', authenticateToken, (req, res) => {
+  const parts = (req.user.name || '').trim().split(/\s+/);
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || '';
   res.json({
     success: true,
     message: 'Token is valid',
     data: {
       user: {
         id: req.user.id,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
+        name: req.user.name,
+        firstName,
+        lastName,
         email: req.user.email,
         role: req.user.role
       }

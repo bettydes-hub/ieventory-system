@@ -64,7 +64,7 @@ class AuditController {
         include: [
           {
             model: User,
-            attributes: ['id', 'firstName', 'lastName', 'email', 'role']
+            attributes: ['id', 'name', 'email', 'role']
           }
         ],
         limit: parseInt(limit),
@@ -104,7 +104,7 @@ class AuditController {
         include: [
           {
             model: User,
-            attributes: ['id', 'firstName', 'lastName', 'email', 'role']
+            attributes: ['id', 'name', 'email', 'role']
           }
         ]
       });
@@ -148,7 +148,7 @@ class AuditController {
         include: [
           {
             model: User,
-            attributes: ['id', 'firstName', 'lastName', 'email', 'role']
+            attributes: ['id', 'name', 'email', 'role']
           }
         ],
         order: [['timestamp', 'DESC']],
@@ -283,7 +283,7 @@ class AuditController {
           (summary.actionTypes[audit.action_type] || 0) + 1;
         
         // Count user activity
-        const userName = `${audit.User.firstName} ${audit.User.lastName}`;
+        const userName = audit.User?.name || 'Unknown User';
         summary.users[userName] = (summary.users[userName] || 0) + 1;
       });
 
@@ -333,7 +333,7 @@ class AuditController {
         include: [
           {
             model: User,
-            attributes: ['id', 'firstName', 'lastName', 'email', 'role']
+            attributes: ['id', 'name', 'email', 'role']
           }
         ],
         order: [['timestamp', 'DESC']]
@@ -354,7 +354,7 @@ class AuditController {
         summary.actionTypes[audit.action_type] = 
           (summary.actionTypes[audit.action_type] || 0) + 1;
         
-        const userName = `${audit.User.firstName} ${audit.User.lastName}`;
+        const userName = audit.User?.name || 'Unknown User';
         summary.users[userName] = (summary.users[userName] || 0) + 1;
       });
 
@@ -404,7 +404,7 @@ class AuditController {
         include: [
           {
             model: User,
-            attributes: ['id', 'firstName', 'lastName', 'email', 'role']
+            attributes: ['id', 'name', 'email', 'role']
           }
         ],
         order: [['timestamp', 'DESC']]
@@ -424,7 +424,7 @@ class AuditController {
         summary.actionTypes[audit.action_type] = 
           (summary.actionTypes[audit.action_type] || 0) + 1;
         
-        const userName = `${audit.User.firstName} ${audit.User.lastName}`;
+        const userName = audit.User?.name || 'Unknown User';
         summary.users[userName] = (summary.users[userName] || 0) + 1;
       });
 

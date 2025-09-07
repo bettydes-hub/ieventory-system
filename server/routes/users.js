@@ -22,7 +22,7 @@ router.get('/', authenticateToken, canManageUsers, async (req, res) => {
 
     const users = await User.findAndCountAll({
       where: whereClause,
-      attributes: { exclude: ['password'] },
+      attributes: { exclude: ['password_hash'] },
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['createdAt', 'DESC']]
@@ -57,7 +57,7 @@ router.get('/', authenticateToken, canManageUsers, async (req, res) => {
 router.get('/:id', authenticateToken, canManageUsers, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id, {
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password_hash'] }
     });
 
     if (!user) {
@@ -158,7 +158,7 @@ router.put('/:id', authenticateToken, canManageUsers, async (req, res) => {
     });
 
     const userResponse = user.toJSON();
-    delete userResponse.password;
+    delete userResponse.password_hash;
 
     res.json({
       success: true,
