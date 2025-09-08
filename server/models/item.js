@@ -22,6 +22,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM("available", "damaged", "reserved"),
       defaultValue: "available",
     },
+    image_path: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   }, {
     tableName: "items",
     timestamps: true,

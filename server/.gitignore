@@ -80,3 +80,6 @@ build/
 out/
 .nuxt/
 .cache/
+
+# Uploaded files
+uploads/
