@@ -3,6 +3,7 @@ const router = express.Router();
 const inventoryController = require('../controllers/inventoryController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const { requireRole } = require('../middleware/roleMiddleware');
+const { upload } = require('../middleware/upload');
 
 // Apply authentication to all routes
 router.use(authenticateToken);
@@ -24,12 +25,14 @@ router.get('/:id',
 // Create new item (Admin and Store Keeper only)
 router.post('/', 
   requireRole(['Admin', 'Store Keeper']),
+  upload.single('image'),
   inventoryController.createItem
 );
 
 // Update item (Admin and Store Keeper only)
 router.put('/:id', 
   requireRole(['Admin', 'Store Keeper']),
+  upload.single('image'),
   inventoryController.updateItem
 );
 

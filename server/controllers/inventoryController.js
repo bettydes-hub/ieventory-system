@@ -129,7 +129,6 @@ class InventoryController {
         minStockLevel,
         maxStockLevel,
         status = 'available',
-        image,
         notes
       } = req.body;
       
@@ -159,7 +158,15 @@ class InventoryController {
         });
       }
       
-      // Create item
+      // Determine image path from uploaded file (if any)
+      let imagePath = null;
+      if (req.file) {
+        // Expose as URL path under /uploads
+        const relative = req.file.path.replace(/.*server[\\/]/, '');
+        imagePath = '/' + relative.replace(/\\/g, '/');
+      }
+
+      // Create item (store image_path only)
       const item = await Item.create({
         name,
         description,
@@ -168,25 +175,34 @@ class InventoryController {
         manufacturer,
         purchaseDate,
         purchasePrice,
-        categoryId,
-        storeId,
-        quantity: quantity || 0,
-        minStockLevel: minStockLevel || 0,
-        maxStockLevel: maxStockLevel || 1000,
+        // NOTE: schema uses snake_case; controller accepts camelCase.
+        // If client sends storeId/categoryId, they won't map automatically.
+        // Prefer supporting both by mapping when provided.
+        category_id: categoryId,
+        store_id: storeId,
+        amount: quantity || 0,
+        low_stock_threshold: minStockLevel || 0,
         status,
-        image,
+        image_path: imagePath,
         notes
       });
       
       // Generate QR code
-      const qrCodeData = await this.generateQRCode(item.itemId);
-      await item.update({ qrCode: qrCodeData });
+      // Only attempt QR if item has a compatible primary key
+      try {
+        const id = item.itemId || item.item_id || item.id;
+        if (id) {
+          const qrCodeData = await this.generateQRCode(id);
+          // Store QR code if the model supports it (ignored otherwise)
+          await item.update({ qrCode: qrCodeData }, { silent: true }).catch(() => {});
+        }
+      } catch (_) { /* no-op */ }
       
       // Log audit
       await AuditLog.create({
         userId: req.user.userId,
         targetTable: 'items',
-        targetId: item.itemId,
+        targetId: item.itemId || item.item_id,
         actionType: 'CREATE',
         newValue: JSON.stringify(item.toJSON())
       });
@@ -212,8 +228,8 @@ class InventoryController {
   async updateItem(req, res) {
     try {
       const { id } = req.params;
-      const updateData = req.body;
-      
+      const updateData = { ...req.body };
+
       const item = await Item.findByPk(id);
       if (!item) {
         return res.status(404).json({
@@ -221,9 +237,21 @@ class InventoryController {
           message: 'Item not found'
         });
       }
-      
+
       const oldData = item.toJSON();
-      
+
+      // If a new image is uploaded, update image_path
+      if (req.file) {
+        const relative = req.file.path.replace(/.*server[\\/]/, '');
+        updateData.image_path = '/' + relative.replace(/\\/g, '/');
+      }
+
+      // Map camelCase -> snake_case for known fields
+      if (updateData.storeId && !updateData.store_id) updateData.store_id = updateData.storeId;
+      if (updateData.categoryId && !updateData.category_id) updateData.category_id = updateData.categoryId;
+      if (updateData.quantity && !updateData.amount) updateData.amount = updateData.quantity;
+      if (updateData.minStockLevel && !updateData.low_stock_threshold) updateData.low_stock_threshold = updateData.minStockLevel;
+
       // Update item
       await item.update(updateData);
       
@@ -231,7 +259,7 @@ class InventoryController {
       await AuditLog.create({
         userId: req.user.userId,
         targetTable: 'items',
-        targetId: item.itemId,
+        targetId: item.itemId || item.item_id,
         actionType: 'UPDATE',
         oldValue: JSON.stringify(oldData),
         newValue: JSON.stringify(item.toJSON())
