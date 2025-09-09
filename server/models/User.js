@@ -67,6 +67,15 @@ const User = sequelize.define('User', {
   vehicleInfo: {
     type: DataTypes.JSON,
     allowNull: true
+  },
+  // First-time login tracking
+  isFirstLogin: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  passwordChanged: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   tableName: 'users',

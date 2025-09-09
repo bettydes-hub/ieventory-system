@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const QRCode = require('qrcode');
 const fs = require('fs').promises;
 const path = require('path');
+const { mapItemToFrontend } = require('../utils/fieldMapper');
 
 class InventoryController {
   // ==================== CRUD OPERATIONS ====================
@@ -53,10 +54,13 @@ class InventoryController {
         order: [['createdAt', 'DESC']]
       });
       
+      // Map items to frontend format
+      const mappedItems = items.map(item => mapItemToFrontend(item));
+      
       res.json({
         success: true,
         data: {
-          items,
+          items: mappedItems,
           pagination: {
             currentPage: parseInt(page),
             totalPages: Math.ceil(count / limit),
@@ -98,7 +102,7 @@ class InventoryController {
       
       res.json({
         success: true,
-        data: item
+        data: mapItemToFrontend(item)
       });
     } catch (error) {
       console.error('Error getting item:', error);
@@ -166,22 +170,20 @@ class InventoryController {
         imagePath = '/' + relative.replace(/\\/g, '/');
       }
 
-      // Create item (store image_path only)
+      // Create item with proper field mapping (camelCase -> snake_case)
       const item = await Item.create({
         name,
         description,
         model,
-        serialNumber,
+        serial_number: serialNumber,
         manufacturer,
-        purchaseDate,
-        purchasePrice,
-        // NOTE: schema uses snake_case; controller accepts camelCase.
-        // If client sends storeId/categoryId, they won't map automatically.
-        // Prefer supporting both by mapping when provided.
+        purchase_date: purchaseDate,
+        purchase_price: purchasePrice,
         category_id: categoryId,
         store_id: storeId,
         amount: quantity || 0,
         low_stock_threshold: minStockLevel || 0,
+        max_stock_level: maxStockLevel || 100,
         status,
         image_path: imagePath,
         notes
@@ -190,11 +192,11 @@ class InventoryController {
       // Generate QR code
       // Only attempt QR if item has a compatible primary key
       try {
-        const id = item.itemId || item.item_id || item.id;
+        const id = item.item_id || item.itemId || item.id;
         if (id) {
           const qrCodeData = await this.generateQRCode(id);
-          // Store QR code if the model supports it (ignored otherwise)
-          await item.update({ qrCode: qrCodeData }, { silent: true }).catch(() => {});
+          // Store QR code with proper field mapping
+          await item.update({ qr_code: qrCodeData }, { silent: true }).catch(() => {});
         }
       } catch (_) { /* no-op */ }
       
@@ -210,7 +212,7 @@ class InventoryController {
       res.status(201).json({
         success: true,
         message: 'Item created successfully',
-        data: item
+        data: mapItemToFrontend(item)
       });
     } catch (error) {
       console.error('Error creating item:', error);
@@ -251,6 +253,22 @@ class InventoryController {
       if (updateData.categoryId && !updateData.category_id) updateData.category_id = updateData.categoryId;
       if (updateData.quantity && !updateData.amount) updateData.amount = updateData.quantity;
       if (updateData.minStockLevel && !updateData.low_stock_threshold) updateData.low_stock_threshold = updateData.minStockLevel;
+      if (updateData.maxStockLevel && !updateData.max_stock_level) updateData.max_stock_level = updateData.maxStockLevel;
+      if (updateData.serialNumber && !updateData.serial_number) updateData.serial_number = updateData.serialNumber;
+      if (updateData.purchaseDate && !updateData.purchase_date) updateData.purchase_date = updateData.purchaseDate;
+      if (updateData.purchasePrice && !updateData.purchase_price) updateData.purchase_price = updateData.purchasePrice;
+      if (updateData.warrantyExpiry && !updateData.warranty_expiry) updateData.warranty_expiry = updateData.warrantyExpiry;
+      
+      // Clean up camelCase fields to avoid conflicts
+      delete updateData.storeId;
+      delete updateData.categoryId;
+      delete updateData.quantity;
+      delete updateData.minStockLevel;
+      delete updateData.maxStockLevel;
+      delete updateData.serialNumber;
+      delete updateData.purchaseDate;
+      delete updateData.purchasePrice;
+      delete updateData.warrantyExpiry;
 
       // Update item
       await item.update(updateData);
@@ -268,7 +286,7 @@ class InventoryController {
       res.json({
         success: true,
         message: 'Item updated successfully',
-        data: item
+        data: mapItemToFrontend(item)
       });
     } catch (error) {
       console.error('Error updating item:', error);
