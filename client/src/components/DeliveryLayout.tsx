@@ -1,95 +1,51 @@
 import React, { useState } from 'react';
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Badge, Button, Drawer, ConfigProvider } from 'antd';
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Drawer, ConfigProvider } from 'antd';
 import {
   MenuOutlined,
   DashboardOutlined,
-  InboxOutlined,
-  AppstoreOutlined,
-  ShopOutlined,
-  TeamOutlined,
-  SwapOutlined,
-  ExclamationCircleOutlined,
   TruckOutlined,
-  SearchOutlined,
-  AuditOutlined,
+  CheckCircleOutlined,
   UserOutlined,
   LogoutOutlined,
-  BellOutlined,
-  HomeOutlined,
-  FileTextOutlined,
-  BarChartOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
 import { themeConfig, brandColors, commonStyles } from '@/theme';
 import NotificationDropdown from './NotificationDropdown';
 
 const { Header, Sider, Content } = AntLayout;
 
-interface LayoutProps {
+interface DeliveryLayoutProps {
   children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const DeliveryLayout: React.FC<DeliveryLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const { unreadCount } = useSelector((state: RootState) => state.notifications);
 
   const menuItems = [
     {
-      key: '/dashboard',
-      icon: <HomeOutlined />,
-      label: 'Home',
+      key: '/delivery/dashboard',
+      icon: <DashboardOutlined />,
+      label: 'Dashboard',
     },
     {
-      key: '/inventory',
-      icon: <InboxOutlined />,
-      label: 'Inventory',
-    },
-    {
-      key: '/transactions',
-      icon: <FileTextOutlined />,
-      label: 'Requests',
-    },
-    {
-      key: '/deliveries',
+      key: '/delivery/assigned-deliveries',
       icon: <TruckOutlined />,
-      label: 'Deliveries',
+      label: 'Assigned Deliveries',
     },
     {
-      key: '/audit',
-      icon: <BarChartOutlined />,
-      label: 'Reports',
+      key: '/delivery/update-status',
+      icon: <CheckCircleOutlined />,
+      label: 'Update Status',
     },
     {
-      key: '/categories',
-      icon: <AppstoreOutlined />,
-      label: 'Categories',
-    },
-    {
-      key: '/stores',
-      icon: <ShopOutlined />,
-      label: 'Stores',
-    },
-    {
-      key: '/suppliers',
-      icon: <TeamOutlined />,
-      label: 'Suppliers',
-    },
-    {
-      key: '/damage-reports',
-      icon: <ExclamationCircleOutlined />,
-      label: 'Damage Reports',
-    },
-    {
-      key: '/search',
-      icon: <SearchOutlined />,
-      label: 'Search',
+      key: '/delivery/profile',
+      icon: <UserOutlined />,
+      label: 'Profile',
     },
   ];
 
@@ -107,6 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Profile',
+      onClick: () => navigate('/delivery/profile'),
     },
     {
       key: 'logout',
@@ -133,7 +90,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           fontWeight: 'bold',
           transition: 'all 0.2s'
         }}>
-          {collapsed ? 'INV' : 'Inventory'}
+          {collapsed ? 'DEL' : 'Delivery Portal'}
         </h2>
       </div>
       <Menu
@@ -186,11 +143,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              color: '#1890ff',
+              color: brandColors.primary,
               fontWeight: 'bold'
             }}>
-              <InboxOutlined style={{ marginRight: 8 }} />
-              Inventory System
+              <TruckOutlined style={{ marginRight: 8 }} />
+              Delivery Portal
             </div>
           }
           placement="left"
@@ -268,7 +225,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     icon={<UserOutlined />} 
                     style={{ 
                       marginRight: 8,
-                      background: '#1890ff'
+                      background: brandColors.primary
                     }} 
                   />
                   <span style={{ fontWeight: 500 }}>{user?.name}</span>
@@ -295,4 +252,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 };
 
-export default Layout;
+export default DeliveryLayout;

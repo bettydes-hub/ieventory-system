@@ -7,8 +7,8 @@ import {
   ExclamationCircleOutlined,
   SwapOutlined,
   TruckOutlined,
-  TrendingUpOutlined,
-  TrendingDownOutlined,
+  RiseOutlined,
+  FallOutlined,
 } from '@ant-design/icons';
 import { useInventory } from '@/hooks/useInventory';
 import { useAuth } from '@/hooks/useAuth';
@@ -89,7 +89,7 @@ const Dashboard: React.FC = () => {
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'success':
-        return <TrendingUpOutlined style={{ color: '#52c41a' }} />;
+        return <RiseOutlined style={{ color: '#52c41a' }} />;
       case 'info':
         return <SwapOutlined style={{ color: '#1890ff' }} />;
       case 'warning':

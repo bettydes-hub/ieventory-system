@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Alert, Space } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Button, Card, Typography, Alert, Space, Divider } from 'antd';
+import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { LoginRequest } from '@/types';
 
@@ -8,8 +8,19 @@ const { Title, Text } = Typography;
 
 const Login: React.FC = () => {
   const [form] = Form.useForm();
-  const { login, loading, error, clearError } = useAuth();
+  const { login, basecampLogin, loading, error, clearError } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Handle Basecamp callback on page load
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    if (code && state) {
+      handleBasecampLogin();
+    }
+  }, []);
 
   const handleSubmit = async (values: LoginRequest) => {
     setIsSubmitting(true);
@@ -19,6 +30,44 @@ const Login: React.FC = () => {
       await login(values);
     } catch (error) {
       // Error is handled by the auth hook
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleBasecampLogin = async () => {
+    try {
+      setIsSubmitting(true);
+      clearError();
+      
+      // Mock Basecamp login for demo purposes
+      // In a real app, this would redirect to Basecamp OAuth2
+      console.log('Basecamp login clicked - this is a demo');
+      
+      // Simulate Basecamp login with a demo user
+      const mockBasecampUser = {
+        id: '5',
+        name: 'Demo Basecamp User',
+        email: 'demo@basecamp.com',
+        role: 'Employee',
+        isFirstLogin: false,
+        passwordChanged: true,
+        createdAt: '2024-01-20'
+      };
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Use the regular login flow with mock Basecamp user
+      await login({
+        email: mockBasecampUser.email,
+        password: 'basecamp123' // This won't be used, just for the login function
+      });
+      
+    } catch (error) {
+      console.error('Basecamp login error:', error);
+      // Show a demo message
+      alert('Basecamp login is not fully implemented yet. This is a demo version. In a real app, this would redirect to Basecamp OAuth2.');
     } finally {
       setIsSubmitting(false);
     }
@@ -111,6 +160,54 @@ const Login: React.FC = () => {
           </Form.Item>
         </Form>
 
+        <Divider style={{ margin: '24px 0' }}>
+          <Text type="secondary">OR</Text>
+        </Divider>
+
+        <Button
+          type="default"
+          size="large"
+          icon={
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              style={{ marginRight: 8 }}
+            >
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          }
+          onClick={handleBasecampLogin}
+          loading={loading || isSubmitting}
+          style={{ 
+            width: '100%', 
+            height: 40,
+            backgroundColor: '#1d4ed8',
+            borderColor: '#1d4ed8',
+            color: '#ffffff',
+            fontWeight: '600',
+            fontSize: '14px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+          }}
+          onMouseEnter={(e) => {
+            if (!loading && !isSubmitting) {
+              e.currentTarget.style.backgroundColor = '#1e40af';
+              e.currentTarget.style.borderColor = '#1e40af';
+              e.currentTarget.style.color = '#ffffff';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!loading && !isSubmitting) {
+              e.currentTarget.style.backgroundColor = '#1d4ed8';
+              e.currentTarget.style.borderColor = '#1d4ed8';
+              e.currentTarget.style.color = '#ffffff';
+            }
+          }}
+        >
+          Sign in with Basecamp
+        </Button>
+
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           <Space direction="vertical" size="small">
             <Text type="secondary" style={{ fontSize: 12 }}>
@@ -123,7 +220,14 @@ const Login: React.FC = () => {
               Employee: employee@inventory.com / employee123
             </Text>
             <Text code style={{ fontSize: 11 }}>
-              Delivery: delivery@inventory.com / delivery123
+              Store Keeper: storekeeper@inventory.com / changeme
+            </Text>
+            <Text code style={{ fontSize: 11 }}>
+              Delivery: delivery@inventory.com / changeme
+            </Text>
+            <Divider style={{ margin: '8px 0' }} />
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              Or click "Sign in with Basecamp" above for demo
             </Text>
           </Space>
         </div>
