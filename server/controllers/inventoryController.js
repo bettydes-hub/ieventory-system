@@ -30,12 +30,12 @@ class InventoryController {
       
       // Category filter
       if (category) {
-        whereClause.categoryId = category;
+        whereClause.category_id = category;
       }
       
       // Store filter
       if (store) {
-        whereClause.storeId = store;
+        whereClause.store_id = store;
       }
       
       // Status filter
@@ -46,8 +46,8 @@ class InventoryController {
       const { count, rows: items } = await Item.findAndCountAll({
         where: whereClause,
         include: [
-          { model: Store, attributes: ['storeId', 'name', 'location'] },
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+          { model: Category, attributes: ['category_id', 'name'] }
         ],
         limit: parseInt(limit),
         offset: parseInt(offset),
@@ -88,8 +88,8 @@ class InventoryController {
       
       const item = await Item.findByPk(id, {
         include: [
-          { model: Store, attributes: ['storeId', 'name', 'location'] },
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+          { model: Category, attributes: ['category_id', 'name'] }
         ]
       });
       
@@ -128,7 +128,7 @@ class InventoryController {
         purchaseDate,
         purchasePrice,
         categoryId,
-        storeId,
+        store_id,
         quantity,
         minStockLevel,
         maxStockLevel,
@@ -137,7 +137,7 @@ class InventoryController {
       } = req.body;
       
       // Validate required fields
-      if (!name || !categoryId || !storeId) {
+      if (!name || !categoryId || !store_id) {
         return res.status(400).json({
           success: false,
           message: 'Name, category, and store are required'
@@ -145,7 +145,7 @@ class InventoryController {
       }
       
       // Check if store exists
-      const store = await Store.findByPk(storeId);
+      const store = await Store.findByPk(store_id);
       if (!store) {
         return res.status(400).json({
           success: false,
@@ -180,7 +180,7 @@ class InventoryController {
         purchase_date: purchaseDate,
         purchase_price: purchasePrice,
         category_id: categoryId,
-        store_id: storeId,
+        store_id: store_id,
         amount: quantity || 0,
         low_stock_threshold: minStockLevel || 0,
         max_stock_level: maxStockLevel || 100,
@@ -447,14 +447,14 @@ class InventoryController {
       };
       
       if (storeId) {
-        whereClause.storeId = storeId;
+        whereClause.store_id = storeId;
       }
       
       const lowStockItems = await Item.findAll({
         where: whereClause,
         include: [
-          { model: Store, attributes: ['storeId', 'name', 'location'] },
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+          { model: Category, attributes: ['category_id', 'name'] }
         ],
         order: [['quantity', 'ASC']]
       });
@@ -481,7 +481,7 @@ class InventoryController {
     try {
       const { storeId } = req.params;
       
-      const store = await Store.findByPk(storeId);
+      const store = await Store.findByPk(store_id);
       if (!store) {
         return res.status(404).json({
           success: false,
@@ -490,9 +490,9 @@ class InventoryController {
       }
       
       const items = await Item.findAll({
-        where: { storeId },
+        where: { store_id: storeId },
         include: [
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Category, attributes: ['category_id', 'name'] }
         ],
         order: [['name', 'ASC']]
       });
@@ -550,7 +550,7 @@ class InventoryController {
         });
       }
       
-      if (item.storeId !== fromStoreId) {
+      if (item.store_id !== fromStoreId) {
         return res.status(400).json({
           success: false,
           message: 'Item is not in the specified source store'
@@ -576,7 +576,7 @@ class InventoryController {
       // Update item stock
       await item.update({ 
         quantity: item.quantity - quantity,
-        storeId: toStoreId
+        store_id: toStoreId
       });
       
       // Create transfer transaction
@@ -598,11 +598,11 @@ class InventoryController {
         targetId: item.itemId,
         actionType: 'TRANSFER',
         oldValue: JSON.stringify({ 
-          storeId: fromStoreId, 
+          store_id: fromStoreId, 
           quantity: item.quantity + quantity 
         }),
         newValue: JSON.stringify({ 
-          storeId: toStoreId, 
+          store_id: toStoreId, 
           quantity: item.quantity,
           transferQuantity: quantity,
           reason,
@@ -728,8 +728,8 @@ class InventoryController {
       
       const item = await Item.findByPk(parsedData.itemId, {
         include: [
-          { model: Store, attributes: ['storeId', 'name', 'location'] },
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+          { model: Category, attributes: ['category_id', 'name'] }
         ]
       });
       
@@ -763,7 +763,7 @@ class InventoryController {
     try {
       const { storeId } = req.query;
       
-      const whereClause = storeId ? { storeId } : {};
+      const whereClause = storeId ? { store_id: storeId } : {};
       
       const [
         totalItems,
@@ -869,7 +869,7 @@ class InventoryController {
             itemId: item.itemId,
             name: item.name,
             currentQuantity: item.quantity,
-            currentStoreId: item.storeId
+            currentStoreId: item.store_id
           },
           history,
           pagination: {

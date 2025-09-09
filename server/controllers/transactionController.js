@@ -3,6 +3,72 @@ const { Op } = require('sequelize');
 const { mapItemToFrontend, mapUserToFrontend } = require('../utils/fieldMapper');
 
 class TransactionController {
+  // ==================== BASIC OPERATIONS ====================
+  
+  /**
+   * Get all transactions
+   */
+  async getAllTransactions(req, res) {
+    try {
+      const { page = 1, limit = 10, status, type } = req.query;
+      const offset = (page - 1) * limit;
+      
+      const whereClause = {};
+      if (status) whereClause.status = status;
+      if (type) whereClause.transaction_type = type;
+      
+      const { count, rows: transactions } = await Transaction.findAndCountAll({
+        where: whereClause,
+        include: [
+          { model: Item, attributes: ['item_id', 'name', 'description'] },
+          { model: User, as: 'user', attributes: ['user_id', 'name', 'email'] }
+        ],
+        order: [['created_at', 'DESC']],
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      });
+      
+      res.json({
+        success: true,
+        data: {
+          transactions: transactions.map(t => ({
+            id: t.transaction_id,
+            type: t.transaction_type,
+            status: t.status,
+            quantity: t.quantity,
+            dueDate: t.due_date,
+            reason: t.reason,
+            notes: t.notes,
+            createdAt: t.created_at,
+            item: t.Item ? {
+              id: t.Item.item_id,
+              name: t.Item.name,
+              description: t.Item.description
+            } : null,
+            user: t.user ? {
+              id: t.user.user_id,
+              name: t.user.name,
+              email: t.user.email
+            } : null
+          })),
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / limit),
+            totalItems: count,
+            itemsPerPage: parseInt(limit)
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error getting transactions:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve transactions',
+        error: error.message
+      });
+    }
+  }
+
   // ==================== BORROW OPERATIONS ====================
   
   /**

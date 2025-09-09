@@ -48,8 +48,8 @@ class DamageController {
       // Check if item exists
       const item = await Item.findByPk(itemId, {
         include: [
-          { model: Store, attributes: ['storeId', 'name', 'location'] },
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+          { model: Category, attributes: ['category_id', 'name'] }
         ]
       });
       
@@ -163,9 +163,8 @@ class DamageController {
           },
           {
             model: User,
-            as: 'Resolver',
-            attributes: ['userId', 'name', 'email'],
-            foreignKey: 'resolved_by'
+            as: 'resolver',
+            attributes: ['user_id', 'name', 'email']
           }
         ],
         limit: parseInt(limit),
@@ -240,21 +239,19 @@ class DamageController {
         {
           model: Item,
           include: [
-            { model: Store, attributes: ['storeId', 'name', 'location'] },
-            { model: Category, attributes: ['categoryId', 'name'] }
+            { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+            { model: Category, attributes: ['category_id', 'name'] }
           ]
         },
         {
           model: User,
-          as: 'Reporter',
-          attributes: ['userId', 'name', 'email', 'role'],
-          foreignKey: 'reported_by'
+          as: 'reporter',
+          attributes: ['user_id', 'name', 'email', 'role']
         },
         {
           model: User,
-          as: 'Resolver',
-          attributes: ['userId', 'name', 'email'],
-          foreignKey: 'resolved_by'
+          as: 'resolver',
+          attributes: ['user_id', 'name', 'email']
         }
       ];
       

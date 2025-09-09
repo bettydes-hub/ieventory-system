@@ -7,6 +7,14 @@ const { requireRole } = require('../middleware/roleMiddleware');
 // Apply authentication to all routes
 router.use(authenticateToken);
 
+// ==================== BASIC OPERATIONS ====================
+
+// Get all transactions (Admin and Store Keeper only)
+router.get('/', 
+  requireRole(['Admin', 'Store Keeper']),
+  transactionController.getAllTransactions
+);
+
 // ==================== BORROW OPERATIONS ====================
 
 // Create borrow request (Employees only)

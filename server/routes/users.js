@@ -25,7 +25,7 @@ router.get('/', authenticateToken, canManageUsers, async (req, res) => {
       attributes: { exclude: ['password_hash'] },
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
 
     res.json({
@@ -87,10 +87,10 @@ router.get('/:id', authenticateToken, canManageUsers, async (req, res) => {
  */
 router.post('/', authenticateToken, canManageUsers, async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role, isActive } = req.body;
+    const { name, email, password, role, isActive } = req.body;
 
     // Validate required fields
-    if (!firstName || !lastName || !email || !password || !role) {
+    if (!name || !email || !password || !role) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'
@@ -109,8 +109,7 @@ router.post('/', authenticateToken, canManageUsers, async (req, res) => {
 
     // Create user
     const result = await AuthService.register({
-      firstName,
-      lastName,
+      name,
       email,
       password,
       role,
@@ -146,12 +145,11 @@ router.put('/:id', authenticateToken, canManageUsers, async (req, res) => {
       });
     }
 
-    const { firstName, lastName, email, role, isActive } = req.body;
+    const { name, email, role, isActive } = req.body;
 
     // Update user
     await user.update({
-      firstName: firstName || user.firstName,
-      lastName: lastName || user.lastName,
+      name: name || user.name,
       email: email || user.email,
       role: role || user.role,
       isActive: isActive !== undefined ? isActive : user.isActive
