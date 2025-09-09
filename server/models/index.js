@@ -37,6 +37,7 @@ Delivery.belongsTo(Transaction, { foreignKey: 'transaction_id' });
 Delivery.belongsTo(User, { as: 'assignedTo', foreignKey: 'assigned_to' });
 
 // Damage associations
+Damage.belongsTo(Item, { foreignKey: 'item_id' });
 Damage.belongsTo(User, { as: 'reporter', foreignKey: 'reported_by' });
 Damage.belongsTo(User, { as: 'resolver', foreignKey: 'resolved_by' });
 

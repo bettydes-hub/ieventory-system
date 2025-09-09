@@ -1,21 +1,21 @@
 {
   "development": {
     "username": "postgres",
-    "password": "1123",
+    "password": "Betty12@m",
     "database": "ieventory_db",
     "host": "127.0.0.1",
     "dialect": "postgres"
   },
   "test": {
     "username": "postgres",
-    "password": "1123",
+    "password": "Betty12@m",
     "database": "ieventory_test",
     "host": "127.0.0.1",
     "dialect": "postgres"
   },
   "production": {
     "username": "postgres",
-    "password": "1123",
+    "password": "Betty12@m",
     "database": "ieventory_prod",
     "host": "127.0.0.1",
     "dialect": "postgres"

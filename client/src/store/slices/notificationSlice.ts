@@ -1,5 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Notification } from '@/types';
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+  read: boolean;
+}
 
 interface NotificationState {
   notifications: Notification[];
@@ -7,21 +15,50 @@ interface NotificationState {
 }
 
 const initialState: NotificationState = {
-  notifications: [],
-  unreadCount: 0,
+  notifications: [
+    {
+      id: '1',
+      title: 'Low Stock Alert',
+      message: 'Laptop - Dell XPS 13 is running low on stock (2 remaining)',
+      type: 'warning',
+      timestamp: new Date().toISOString(),
+      read: false,
+    },
+    {
+      id: '2',
+      title: 'Delivery Completed',
+      message: 'Delivery #DEL-001 has been completed successfully',
+      type: 'success',
+      timestamp: new Date(Date.now() - 3600000).toISOString(),
+      read: false,
+    },
+    {
+      id: '3',
+      title: 'New Request',
+      message: 'John Doe has requested to borrow a monitor',
+      type: 'info',
+      timestamp: new Date(Date.now() - 7200000).toISOString(),
+      read: true,
+    },
+  ],
+  unreadCount: 2,
 };
 
 const notificationSlice = createSlice({
   name: 'notifications',
   initialState,
   reducers: {
-    addNotification: (state, action: PayloadAction<Notification>) => {
-      state.notifications.unshift(action.payload);
-      if (!action.payload.read) {
-        state.unreadCount += 1;
-      }
+    addNotification: (state, action: PayloadAction<Omit<Notification, 'id' | 'timestamp' | 'read'>>) => {
+      const notification: Notification = {
+        ...action.payload,
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        read: false,
+      };
+      state.notifications.unshift(notification);
+      state.unreadCount += 1;
     },
-    markAsRead: (state, action: PayloadAction<string>) => {
+    markNotificationAsRead: (state, action: PayloadAction<string>) => {
       const notification = state.notifications.find(n => n.id === action.payload);
       if (notification && !notification.read) {
         notification.read = true;
@@ -35,30 +72,23 @@ const notificationSlice = createSlice({
       state.unreadCount = 0;
     },
     removeNotification: (state, action: PayloadAction<string>) => {
-      const notification = state.notifications.find(n => n.id === action.payload);
-      if (notification && !notification.read) {
-        state.unreadCount -= 1;
+      const index = state.notifications.findIndex(n => n.id === action.payload);
+      if (index !== -1) {
+        const notification = state.notifications[index];
+        if (!notification.read) {
+          state.unreadCount -= 1;
+        }
+        state.notifications.splice(index, 1);
       }
-      state.notifications = state.notifications.filter(n => n.id !== action.payload);
-    },
-    clearAllNotifications: (state) => {
-      state.notifications = [];
-      state.unreadCount = 0;
-    },
-    setNotifications: (state, action: PayloadAction<Notification[]>) => {
-      state.notifications = action.payload;
-      state.unreadCount = action.payload.filter(n => !n.read).length;
     },
   },
 });
 
 export const {
   addNotification,
-  markAsRead,
+  markNotificationAsRead,
   markAllAsRead,
   removeNotification,
-  clearAllNotifications,
-  setNotifications,
 } = notificationSlice.actions;
 
 export default notificationSlice.reducer;

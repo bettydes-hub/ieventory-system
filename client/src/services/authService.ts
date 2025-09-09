@@ -1,40 +1,89 @@
 import api from './api';
-import { LoginRequest, LoginResponse, User } from '@/types';
+import { BasecampLoginRequest, ChangePasswordRequest } from '@/types';
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  token: string;
+}
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const response = await api.post('/auth/login', credentials);
-    return response.data;
+    try {
+      console.log('Attempting login with credentials:', credentials);
+      const response = await api.post('/auth/login', credentials);
+      console.log('Login response:', response.data);
+      
+      // Handle the backend response format where data is wrapped in a 'data' property
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Login failed');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      // Create a more detailed error object
+      const errorResponse = error.response?.data;
+      const errorObj = {
+        message: errorResponse?.message || 'Login failed',
+        errorType: errorResponse?.errorType || 'UNKNOWN_ERROR',
+        status: error.response?.status || 500
+      };
+      throw errorObj;
+    }
   },
 
   logout: async (): Promise<void> => {
-    await api.post('/auth/logout');
-  },
-
-  getProfile: async (): Promise<User> => {
-    const response = await api.get('/auth/profile');
-    return response.data;
-  },
-
-  updateProfile: async (data: Partial<User>): Promise<User> => {
-    const response = await api.put('/auth/profile', data);
-    return response.data;
-  },
-
-  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {
-    await api.put('/auth/change-password', data);
-  },
-
-  resetPassword: async (email: string): Promise<void> => {
-    await api.post('/auth/reset-password', { email });
-  },
-
-  verifyToken: async (token: string): Promise<boolean> => {
     try {
-      await api.get('/auth/verify', { headers: { Authorization: `Bearer ${token}` } });
-      return true;
-    } catch {
-      return false;
+      await api.post('/auth/logout');
+    } catch (error) {
+      // Even if logout fails on server, clear local storage
+      console.error('Logout error:', error);
+    }
+  },
+
+  changePassword: async (data: ChangePasswordRequest): Promise<void> => {
+    try {
+      await api.post('/auth/change-password', data);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Password change failed');
+    }
+  },
+
+  getProfile: async () => {
+    try {
+      const response = await api.get('/auth/profile');
+      return response.data.data || response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to get profile');
+    }
+  },
+
+  updateProfile: async (data: any) => {
+    try {
+      const response = await api.put('/auth/profile', data);
+      return response.data.data || response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to update profile');
+    }
+  },
+
+  basecampLogin: async (data: BasecampLoginRequest): Promise<LoginResponse> => {
+    try {
+      const response = await api.post('/auth/basecamp/callback', data);
+      return response.data.data || response.data;
+    } catch (error: any) {
+      console.error('Basecamp login error:', error);
+      throw new Error(error.response?.data?.message || 'Basecamp authentication failed');
     }
   },
 };

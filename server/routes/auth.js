@@ -70,7 +70,8 @@ router.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: 'Email and password are required',
+        errorType: 'MISSING_FIELDS'
       });
     }
 
@@ -84,9 +85,39 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(401).json({
+    
+    // Map error codes to user-friendly messages
+    let statusCode = 401;
+    let message = 'Login failed';
+    let errorType = 'UNKNOWN_ERROR';
+
+    switch (error.message) {
+      case 'INVALID_EMAIL_FORMAT':
+        statusCode = 400;
+        message = 'Please enter a valid email address';
+        errorType = 'INVALID_EMAIL_FORMAT';
+        break;
+      case 'EMAIL_NOT_FOUND':
+        message = 'No account found with this email address';
+        errorType = 'EMAIL_NOT_FOUND';
+        break;
+      case 'INVALID_PASSWORD':
+        message = 'Incorrect password. Please try again';
+        errorType = 'INVALID_PASSWORD';
+        break;
+      case 'ACCOUNT_DEACTIVATED':
+        statusCode = 403;
+        message = 'Your account has been deactivated. Please contact an administrator';
+        errorType = 'ACCOUNT_DEACTIVATED';
+        break;
+      default:
+        message = error.message;
+    }
+
+    res.status(statusCode).json({
       success: false,
-      message: error.message
+      message,
+      errorType
     });
   }
 });

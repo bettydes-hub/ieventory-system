@@ -31,7 +31,7 @@ const Transaction = sequelize.define('Transaction', {
   
   // Transaction Type
   transaction_type: {
-    type: DataTypes.ENUM('Borrow', 'Return', 'Transfer'),
+    type: DataTypes.ENUM('Borrow', 'Return', 'Transfer', 'Purchase'),
     allowNull: false
   },
   
@@ -73,9 +73,51 @@ const Transaction = sequelize.define('Transaction', {
   
   // Status
   status: {
-    type: DataTypes.ENUM('Pending', 'Completed', 'Overdue'),
+    type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Completed', 'Overdue', 'Cancelled'),
     allowNull: false,
     defaultValue: 'Pending'
+  },
+  
+  // Approval workflow
+  approved_by: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'user_id'
+    },
+    comment: 'User who approved/rejected the transaction'
+  },
+  
+  approved_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'When the transaction was approved/rejected'
+  },
+  
+  rejection_reason: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Reason for rejection if applicable'
+  },
+  
+  // Return information
+  returned_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'When the item was actually returned'
+  },
+  
+  return_condition: {
+    type: DataTypes.ENUM('excellent', 'good', 'fair', 'poor', 'damaged'),
+    allowNull: true,
+    comment: 'Condition of item when returned'
+  },
+  
+  return_notes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Notes about the return condition'
   },
   
   // Additional Information
@@ -134,6 +176,43 @@ Transaction.prototype.isBorrow = function() {
 
 Transaction.prototype.isReturn = function() {
   return this.transaction_type === 'Return';
+};
+
+Transaction.prototype.isApproved = function() {
+  return this.status === 'Approved';
+};
+
+Transaction.prototype.isRejected = function() {
+  return this.status === 'Rejected';
+};
+
+Transaction.prototype.isPending = function() {
+  return this.status === 'Pending';
+};
+
+Transaction.prototype.isCompleted = function() {
+  return this.status === 'Completed';
+};
+
+Transaction.prototype.canBeApproved = function() {
+  return this.status === 'Pending';
+};
+
+Transaction.prototype.canBeRejected = function() {
+  return this.status === 'Pending';
+};
+
+Transaction.prototype.canBeReturned = function() {
+  return this.status === 'Approved' && this.transaction_type === 'Borrow';
+};
+
+Transaction.prototype.getDaysUntilDue = function() {
+  if (!this.due_date || this.status === 'Completed') return null;
+  const today = new Date();
+  const dueDate = new Date(this.due_date);
+  const diffTime = dueDate - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
 };
 
 module.exports = Transaction;

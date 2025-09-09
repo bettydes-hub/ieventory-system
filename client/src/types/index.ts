@@ -1,13 +1,11 @@
-// User Types
 export interface User {
-  userId: string;
+  id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Employee' | 'Delivery Staff';
-  department?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  role: string;
+  isFirstLogin?: boolean;
+  passwordChanged?: boolean;
+  createdAt?: string;
 }
 
 export interface LoginRequest {
@@ -15,244 +13,139 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface LoginResponse {
-  token: string;
-  user: User;
-}
-
-// Item Types
-export interface Item {
-  itemId: string;
-  name: string;
-  description?: string;
-  model?: string;
-  serialNumber?: string;
-  manufacturer?: string;
-  purchaseDate?: string;
-  purchasePrice?: number;
-  categoryId: string;
-  storeId: string;
-  supplierId?: string;
-  quantity: number;
-  minStockLevel: number;
-  maxStockLevel: number;
-  status: 'available' | 'maintenance' | 'damaged' | 'retired';
-  image?: string;
-  notes?: string;
-  qrCode?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateItemData {
-  name: string;
-  description?: string;
-  model?: string;
-  serialNumber?: string;
-  manufacturer?: string;
-  purchaseDate?: string;
-  purchasePrice?: number;
-  categoryId: string;
-  storeId: string;
-  supplierId?: string;
-  quantity?: number;
-  minStockLevel?: number;
-  maxStockLevel?: number;
-  status?: string;
-  image?: string;
-  notes?: string;
-}
-
-// Category Types
-export interface Category {
-  categoryId: string;
-  name: string;
-  description?: string;
-  parentId?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  children?: Category[];
-}
-
-// Store Types
-export interface Store {
-  storeId: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  phone?: string;
-  email?: string;
-  managerId?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Supplier Types
-export interface Supplier {
-  supplierId: string;
-  name: string;
-  contactPerson?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
+export interface BasecampLoginRequest {
+  code: string;
   state?: string;
-  zipCode?: string;
-  country?: string;
-  website?: string;
-  notes?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
-// Transaction Types
-export interface Transaction {
-  transactionId: string;
-  type: 'Borrow' | 'Return' | 'Transfer' | 'Purchase' | 'Sale';
-  itemId: string;
-  fromStoreId?: string;
-  toStoreId?: string;
-  userId: string;
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface Item {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
   quantity: number;
-  dueDate?: string;
-  status: 'Pending' | 'Approved' | 'Completed' | 'Overdue' | 'Cancelled';
+  status: 'Available' | 'Borrowed' | 'Maintenance' | 'Damaged';
+  location: string;
+  imageUrl?: string;
+  imageFile?: File;
+  specifications?: {
+    brand?: string;
+    model?: string;
+    serialNumber?: string;
+    purchaseDate?: string;
+    warrantyExpiry?: string;
+    condition?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  location: string;
+  manager: string;
+  createdAt: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contact: string;
+  email: string;
+  phone: string;
+  address: string;
+  createdAt: string;
+}
+
+export interface Transaction {
+  id: string;
+  type: 'Borrow' | 'Return' | 'Transfer' | 'Purchase';
+  itemId: string;
+  item: Item;
+  userId: string;
+  user: User;
+  quantity: number;
+  status: 'Pending' | 'Approved' | 'Completed' | 'Rejected';
   notes?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Damage Report Types
 export interface DamageReport {
-  damageId: string;
+  id: string;
   itemId: string;
-  reportedBy: string;
+  item: Item;
+  userId: string;
+  user: User;
   description: string;
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
-  status: 'Pending' | 'In Progress' | 'Fixed' | 'Discarded';
-  estimatedCost?: number;
-  actualCost?: number;
-  resolvedBy?: string;
-  resolutionNotes?: string;
+  status: 'Pending' | 'Under Review' | 'Resolved';
   createdAt: string;
   updatedAt: string;
 }
 
-// Delivery Types
 export interface Delivery {
-  deliveryId: string;
-  transactionId: string;
-  assignedTo: string;
-  status: 'Assigned' | 'Picked Up' | 'In Progress' | 'Completed' | 'Cancelled';
-  pickupAddress: string;
-  deliveryAddress: string;
-  scheduledDate?: string;
-  completedDate?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Maintenance Types
-export interface Maintenance {
-  maintenanceId: string;
+  id: string;
   itemId: string;
-  type: 'Preventive' | 'Corrective' | 'Emergency';
-  description: string;
-  scheduledDate?: string;
+  item: Item;
+  fromStoreId: string;
+  fromStore: Store;
+  toStoreId: string;
+  toStore: Store;
+  assignedTo: string;
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
+  scheduledDate: string;
   completedDate?: string;
-  performedBy?: string;
-  cost?: number;
-  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
   notes?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Audit Types
-export interface AuditLog {
-  auditId: string;
+// Employee-specific Types
+export interface BorrowRequest {
+  requestId: string;
+  itemId: string;
   userId: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-  oldValues?: any;
-  newValues?: any;
-  ipAddress?: string;
-  userAgent?: string;
+  quantity: number;
+  reason: string;
+  dueDate: string;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Completed';
+  approvedBy?: string;
+  approvedAt?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
-// Search Types
-export interface SearchResult {
-  type: 'item' | 'category' | 'store' | 'supplier' | 'transaction' | 'delivery';
-  id: string;
-  title: string;
-  description?: string;
-  metadata?: any;
-}
-
-export interface SearchFilters {
-  query?: string;
-  type?: string[];
-  categoryId?: string;
-  storeId?: string;
-  status?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
-// Dashboard Types
-export interface DashboardStats {
-  totalItems: number;
-  totalStores: number;
-  totalSuppliers: number;
-  lowStockItems: number;
-  pendingTransactions: number;
-  overdueReturns: number;
-  pendingDeliveries: number;
-  recentActivity: any[];
-}
-
-// API Response Types
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  error?: string;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-// Form Types
-export interface FormField {
-  name: string;
-  label: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'select' | 'textarea' | 'date' | 'file';
-  required?: boolean;
-  options?: { label: string; value: any }[];
-  placeholder?: string;
-  rules?: any[];
-}
-
-// Notification Types
-export interface Notification {
-  id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
+export interface BorrowedItem {
+  borrowId: string;
+  itemId: string;
+  item: Item;
   userId: string;
+  quantity: number;
+  borrowDate: string;
+  dueDate: string;
+  status: 'Active' | 'Overdue' | 'Returned';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDamageReportData {
+  itemId: string;
+  description: string;
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
 }

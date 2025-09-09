@@ -38,20 +38,20 @@ class StoreController {
         include: [
           {
             model: User,
-            as: 'storeKeepers',
-            attributes: ['userId', 'name', 'email', 'role'],
+            as: 'Users',
+            attributes: ['user_id', 'name', 'email', 'role'],
             where: { role: 'Store Keeper' },
             required: false
           },
           {
             model: Item,
-            attributes: ['itemId', 'name', 'quantity', 'status'],
+            attributes: ['item_id', 'name', 'amount', 'status'],
             required: false
           }
         ],
         limit: parseInt(limit),
         offset: parseInt(offset),
-        order: [['createdAt', 'DESC']]
+        order: [['created_at', 'DESC']]
       });
       
       // Add inventory summary for each store
@@ -117,8 +117,8 @@ class StoreController {
         include: [
           {
             model: User,
-            as: 'storeKeepers',
-            attributes: ['userId', 'name', 'email', 'role'],
+            as: 'Users',
+            attributes: ['user_id', 'name', 'email', 'role'],
             where: { role: 'Store Keeper' },
             required: false
           },
@@ -222,7 +222,7 @@ class StoreController {
       
       // Log audit
       await AuditLog.create({
-        userId: req.user.userId,
+        user_id: req.user.userId,
         targetTable: 'stores',
         targetId: store.storeId,
         actionType: 'CREATE',
@@ -295,7 +295,7 @@ class StoreController {
       
       // Log audit
       await AuditLog.create({
-        userId: req.user.userId,
+        user_id: req.user.userId,
         targetTable: 'stores',
         targetId: store.storeId,
         actionType: 'UPDATE',
@@ -367,7 +367,7 @@ class StoreController {
       
       // Log audit
       await AuditLog.create({
-        userId: req.user.userId,
+        user_id: req.user.userId,
         targetTable: 'stores',
         targetId: id,
         actionType: 'DELETE',
@@ -396,7 +396,7 @@ class StoreController {
   async transferItemsBetweenStores(req, res) {
     try {
       const { 
-        itemId, 
+        item_id: itemId, 
         fromStoreId, 
         toStoreId, 
         quantity, 
@@ -478,10 +478,10 @@ class StoreController {
       
       // Create transfer transaction
       const transaction = await Transaction.create({
-        itemId,
+        item_id: itemId,
         fromStoreId,
         toStoreId,
-        userId: req.user.userId,
+        user_id: req.user.userId,
         amount: quantity,
         transactionType: 'transfer',
         status: 'completed',
@@ -491,9 +491,9 @@ class StoreController {
       
       // Log audit
       await AuditLog.create({
-        userId: req.user.userId,
+        user_id: req.user.userId,
         targetTable: 'items',
-        targetId: item.itemId,
+        targetId: item.item_id,
         actionType: 'STORE_TRANSFER',
         oldValue: JSON.stringify({ 
           storeId: fromStoreId, 
@@ -515,7 +515,7 @@ class StoreController {
         data: {
           transaction,
           item: {
-            itemId: item.itemId,
+            item_id: item.item_id,
             name: item.name,
             oldQuantity,
             newQuantity,
@@ -570,15 +570,15 @@ class StoreController {
       const { count, rows: transfers } = await Transaction.findAndCountAll({
         where: whereClause,
         include: [
-          { model: Item, attributes: ['itemId', 'name', 'model'] },
-          { model: Store, as: 'fromStore', attributes: ['storeId', 'name'] },
-          { model: Store, as: 'toStore', attributes: ['storeId', 'name'] },
-          { model: User, attributes: ['userId', 'name', 'role'] },
-          { model: User, as: 'assignedUser', attributes: ['userId', 'name', 'role'] }
+          { model: Item, attributes: ['item_id', 'name', 'model'] },
+          { model: Store, as: 'fromStore', attributes: ['store_id', 'store_name'] },
+          { model: Store, as: 'toStore', attributes: ['store_id', 'store_name'] },
+          { model: User, attributes: ['user_id', 'name', 'role'] },
+          { model: User, as: 'assignedUser', attributes: ['user_id', 'name', 'role'] }
         ],
         limit: parseInt(limit),
         offset: parseInt(offset),
-        order: [['createdAt', 'DESC']]
+        order: [['created_at', 'DESC']]
       });
       
       res.json({
@@ -641,7 +641,7 @@ class StoreController {
         Item.findAll({
           attributes: [
             'categoryId',
-            [Item.sequelize.fn('COUNT', Item.sequelize.col('itemId')), 'count'],
+            [Item.sequelize.fn('COUNT', Item.sequelize.col('item_id')), 'count'],
             [Item.sequelize.fn('SUM', Item.sequelize.col('quantity')), 'totalQuantity']
           ],
           where: { storeId },
@@ -666,11 +666,11 @@ class StoreController {
             ]
           },
           include: [
-            { model: Item, attributes: ['itemId', 'name'] },
-            { model: User, attributes: ['userId', 'name'] }
+            { model: Item, attributes: ['item_id', 'name'] },
+            { model: User, attributes: ['user_id', 'name'] }
           ],
           limit: 5,
-          order: [['createdAt', 'DESC']]
+          order: [['created_at', 'DESC']]
         })
       ]);
       
@@ -908,7 +908,7 @@ class StoreController {
       
       // Log audit
       await AuditLog.create({
-        userId: req.user.userId,
+        user_id: req.user.userId,
         targetTable: 'stores',
         targetId: store.storeId,
         actionType: 'SETTINGS_UPDATE',
@@ -983,7 +983,7 @@ class StoreController {
       
       // Log audit
       await AuditLog.create({
-        userId: req.user.userId,
+        user_id: req.user.userId,
         targetTable: 'stores',
         targetId: store.storeId,
         actionType: 'MANAGER_ASSIGNMENT',
@@ -1001,7 +1001,7 @@ class StoreController {
             managerId
           },
           manager: {
-            userId: manager.userId,
+            user_id: manager.user_id,
             name: manager.name,
             email: manager.email
           }
@@ -1029,7 +1029,7 @@ class StoreController {
           {
             model: User,
             as: 'manager',
-            attributes: ['userId', 'name', 'email', 'role']
+            attributes: ['user_id', 'name', 'email', 'role']
           }
         ]
       });
@@ -1089,7 +1089,7 @@ class StoreController {
       
       // Log audit
       await AuditLog.create({
-        userId: req.user.userId,
+        user_id: req.user.userId,
         targetTable: 'stores',
         targetId: store.storeId,
         actionType: 'STATUS_TOGGLE',

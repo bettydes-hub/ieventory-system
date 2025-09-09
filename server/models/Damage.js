@@ -57,9 +57,15 @@ const Damage = sequelize.define('Damage', {
     allowNull: false
   },
   
+  severity: {
+    type: DataTypes.ENUM('Low', 'Medium', 'High', 'Critical'),
+    allowNull: false,
+    defaultValue: 'Medium'
+  },
+  
   // Status
   status: {
-    type: DataTypes.ENUM('Pending', 'Fixed', 'Discarded'),
+    type: DataTypes.ENUM('Pending', 'Under Review', 'Resolved'),
     allowNull: false,
     defaultValue: 'Pending'
   },
@@ -141,16 +147,20 @@ Damage.prototype.isPending = function() {
   return this.status === 'Pending';
 };
 
-Damage.prototype.isFixed = function() {
-  return this.status === 'Fixed';
-};
-
-Damage.prototype.isDiscarded = function() {
-  return this.status === 'Discarded';
+Damage.prototype.isUnderReview = function() {
+  return this.status === 'Under Review';
 };
 
 Damage.prototype.isResolved = function() {
-  return ['Fixed', 'Discarded'].includes(this.status);
+  return this.status === 'Resolved';
+};
+
+Damage.prototype.isCritical = function() {
+  return this.severity === 'Critical';
+};
+
+Damage.prototype.isHighSeverity = function() {
+  return ['High', 'Critical'].includes(this.severity);
 };
 
 Damage.prototype.getResolutionTime = function() {

@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const QRCode = require('qrcode');
 const fs = require('fs').promises;
 const path = require('path');
+const { mapItemToFrontend } = require('../utils/fieldMapper');
 
 class InventoryController {
   // ==================== CRUD OPERATIONS ====================
@@ -29,12 +30,12 @@ class InventoryController {
       
       // Category filter
       if (category) {
-        whereClause.categoryId = category;
+        whereClause.category_id = category;
       }
       
       // Store filter
       if (store) {
-        whereClause.storeId = store;
+        whereClause.store_id = store;
       }
       
       // Status filter
@@ -45,18 +46,21 @@ class InventoryController {
       const { count, rows: items } = await Item.findAndCountAll({
         where: whereClause,
         include: [
-          { model: Store, attributes: ['storeId', 'name', 'location'] },
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+          { model: Category, attributes: ['category_id', 'name'] }
         ],
         limit: parseInt(limit),
         offset: parseInt(offset),
         order: [['createdAt', 'DESC']]
       });
       
+      // Map items to frontend format
+      const mappedItems = items.map(item => mapItemToFrontend(item));
+      
       res.json({
         success: true,
         data: {
-          items,
+          items: mappedItems,
           pagination: {
             currentPage: parseInt(page),
             totalPages: Math.ceil(count / limit),
@@ -84,8 +88,8 @@ class InventoryController {
       
       const item = await Item.findByPk(id, {
         include: [
-          { model: Store, attributes: ['storeId', 'name', 'location'] },
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+          { model: Category, attributes: ['category_id', 'name'] }
         ]
       });
       
@@ -98,7 +102,7 @@ class InventoryController {
       
       res.json({
         success: true,
-        data: item
+        data: mapItemToFrontend(item)
       });
     } catch (error) {
       console.error('Error getting item:', error);
@@ -124,7 +128,7 @@ class InventoryController {
         purchaseDate,
         purchasePrice,
         categoryId,
-        storeId,
+        store_id,
         quantity,
         minStockLevel,
         maxStockLevel,
@@ -133,7 +137,7 @@ class InventoryController {
       } = req.body;
       
       // Validate required fields
-      if (!name || !categoryId || !storeId) {
+      if (!name || !categoryId || !store_id) {
         return res.status(400).json({
           success: false,
           message: 'Name, category, and store are required'
@@ -141,7 +145,7 @@ class InventoryController {
       }
       
       // Check if store exists
-      const store = await Store.findByPk(storeId);
+      const store = await Store.findByPk(store_id);
       if (!store) {
         return res.status(400).json({
           success: false,
@@ -166,22 +170,20 @@ class InventoryController {
         imagePath = '/' + relative.replace(/\\/g, '/');
       }
 
-      // Create item (store image_path only)
+      // Create item with proper field mapping (camelCase -> snake_case)
       const item = await Item.create({
         name,
         description,
         model,
-        serialNumber,
+        serial_number: serialNumber,
         manufacturer,
-        purchaseDate,
-        purchasePrice,
-        // NOTE: schema uses snake_case; controller accepts camelCase.
-        // If client sends storeId/categoryId, they won't map automatically.
-        // Prefer supporting both by mapping when provided.
+        purchase_date: purchaseDate,
+        purchase_price: purchasePrice,
         category_id: categoryId,
-        store_id: storeId,
+        store_id: store_id,
         amount: quantity || 0,
         low_stock_threshold: minStockLevel || 0,
+        max_stock_level: maxStockLevel || 100,
         status,
         image_path: imagePath,
         notes
@@ -190,11 +192,11 @@ class InventoryController {
       // Generate QR code
       // Only attempt QR if item has a compatible primary key
       try {
-        const id = item.itemId || item.item_id || item.id;
+        const id = item.item_id || item.itemId || item.id;
         if (id) {
           const qrCodeData = await this.generateQRCode(id);
-          // Store QR code if the model supports it (ignored otherwise)
-          await item.update({ qrCode: qrCodeData }, { silent: true }).catch(() => {});
+          // Store QR code with proper field mapping
+          await item.update({ qr_code: qrCodeData }, { silent: true }).catch(() => {});
         }
       } catch (_) { /* no-op */ }
       
@@ -210,7 +212,7 @@ class InventoryController {
       res.status(201).json({
         success: true,
         message: 'Item created successfully',
-        data: item
+        data: mapItemToFrontend(item)
       });
     } catch (error) {
       console.error('Error creating item:', error);
@@ -251,6 +253,22 @@ class InventoryController {
       if (updateData.categoryId && !updateData.category_id) updateData.category_id = updateData.categoryId;
       if (updateData.quantity && !updateData.amount) updateData.amount = updateData.quantity;
       if (updateData.minStockLevel && !updateData.low_stock_threshold) updateData.low_stock_threshold = updateData.minStockLevel;
+      if (updateData.maxStockLevel && !updateData.max_stock_level) updateData.max_stock_level = updateData.maxStockLevel;
+      if (updateData.serialNumber && !updateData.serial_number) updateData.serial_number = updateData.serialNumber;
+      if (updateData.purchaseDate && !updateData.purchase_date) updateData.purchase_date = updateData.purchaseDate;
+      if (updateData.purchasePrice && !updateData.purchase_price) updateData.purchase_price = updateData.purchasePrice;
+      if (updateData.warrantyExpiry && !updateData.warranty_expiry) updateData.warranty_expiry = updateData.warrantyExpiry;
+      
+      // Clean up camelCase fields to avoid conflicts
+      delete updateData.storeId;
+      delete updateData.categoryId;
+      delete updateData.quantity;
+      delete updateData.minStockLevel;
+      delete updateData.maxStockLevel;
+      delete updateData.serialNumber;
+      delete updateData.purchaseDate;
+      delete updateData.purchasePrice;
+      delete updateData.warrantyExpiry;
 
       // Update item
       await item.update(updateData);
@@ -268,7 +286,7 @@ class InventoryController {
       res.json({
         success: true,
         message: 'Item updated successfully',
-        data: item
+        data: mapItemToFrontend(item)
       });
     } catch (error) {
       console.error('Error updating item:', error);
@@ -429,14 +447,14 @@ class InventoryController {
       };
       
       if (storeId) {
-        whereClause.storeId = storeId;
+        whereClause.store_id = storeId;
       }
       
       const lowStockItems = await Item.findAll({
         where: whereClause,
         include: [
-          { model: Store, attributes: ['storeId', 'name', 'location'] },
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+          { model: Category, attributes: ['category_id', 'name'] }
         ],
         order: [['quantity', 'ASC']]
       });
@@ -463,7 +481,7 @@ class InventoryController {
     try {
       const { storeId } = req.params;
       
-      const store = await Store.findByPk(storeId);
+      const store = await Store.findByPk(store_id);
       if (!store) {
         return res.status(404).json({
           success: false,
@@ -472,9 +490,9 @@ class InventoryController {
       }
       
       const items = await Item.findAll({
-        where: { storeId },
+        where: { store_id: storeId },
         include: [
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Category, attributes: ['category_id', 'name'] }
         ],
         order: [['name', 'ASC']]
       });
@@ -532,7 +550,7 @@ class InventoryController {
         });
       }
       
-      if (item.storeId !== fromStoreId) {
+      if (item.store_id !== fromStoreId) {
         return res.status(400).json({
           success: false,
           message: 'Item is not in the specified source store'
@@ -558,7 +576,7 @@ class InventoryController {
       // Update item stock
       await item.update({ 
         quantity: item.quantity - quantity,
-        storeId: toStoreId
+        store_id: toStoreId
       });
       
       // Create transfer transaction
@@ -580,11 +598,11 @@ class InventoryController {
         targetId: item.itemId,
         actionType: 'TRANSFER',
         oldValue: JSON.stringify({ 
-          storeId: fromStoreId, 
+          store_id: fromStoreId, 
           quantity: item.quantity + quantity 
         }),
         newValue: JSON.stringify({ 
-          storeId: toStoreId, 
+          store_id: toStoreId, 
           quantity: item.quantity,
           transferQuantity: quantity,
           reason,
@@ -710,8 +728,8 @@ class InventoryController {
       
       const item = await Item.findByPk(parsedData.itemId, {
         include: [
-          { model: Store, attributes: ['storeId', 'name', 'location'] },
-          { model: Category, attributes: ['categoryId', 'name'] }
+          { model: Store, attributes: ['store_id', 'store_name', 'location'] },
+          { model: Category, attributes: ['category_id', 'name'] }
         ]
       });
       
@@ -745,7 +763,7 @@ class InventoryController {
     try {
       const { storeId } = req.query;
       
-      const whereClause = storeId ? { storeId } : {};
+      const whereClause = storeId ? { store_id: storeId } : {};
       
       const [
         totalItems,
@@ -851,7 +869,7 @@ class InventoryController {
             itemId: item.itemId,
             name: item.name,
             currentQuantity: item.quantity,
-            currentStoreId: item.storeId
+            currentStoreId: item.store_id
           },
           history,
           pagination: {

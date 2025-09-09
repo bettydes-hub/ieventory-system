@@ -9,7 +9,7 @@ class CategoryController {
    */
   async getAllCategories(req, res) {
     try {
-      const { page = 1, limit = 10, search, parentId, isActive } = req.query;
+      const { page = 1, limit = 10, search, parent_id, isActive } = req.query;
       const offset = (page - 1) * limit;
       
       const whereClause = {};
@@ -23,8 +23,8 @@ class CategoryController {
       }
       
       // Parent category filter
-      if (parentId) {
-        whereClause.parentId = parentId;
+      if (parent_id) {
+        whereClause.parent_id = parent_id;
       }
       
       // Active status filter
@@ -36,20 +36,8 @@ class CategoryController {
         where: whereClause,
         include: [
           {
-            model: Category,
-            as: 'parent',
-            attributes: ['categoryId', 'name', 'description'],
-            required: false
-          },
-          {
-            model: Category,
-            as: 'children',
-            attributes: ['categoryId', 'name', 'description', 'isActive'],
-            required: false
-          },
-          {
             model: Item,
-            attributes: ['itemId', 'name', 'quantity', 'status'],
+            attributes: ['item_id', 'name', 'amount', 'status'],
             required: false
           }
         ],
@@ -61,8 +49,8 @@ class CategoryController {
       // Add item count for each category
       const categoriesWithCounts = await Promise.all(
         categories.map(async (category) => {
-          const itemCount = await Item.count({ where: { categoryId: category.categoryId } });
-          const totalQuantity = await Item.sum('quantity', { where: { categoryId: category.categoryId } });
+          const itemCount = await Item.count({ where: { category_id: category.category_id } });
+          const totalQuantity = await Item.sum('amount', { where: { category_id: category.category_id } });
           const lowStockItems = await Item.count({
             where: {
               categoryId: category.categoryId,
