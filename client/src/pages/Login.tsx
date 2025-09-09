@@ -10,6 +10,24 @@ const Login: React.FC = () => {
   const [form] = Form.useForm();
   const { login, basecampLogin, loading, error, clearError } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{email?: string, password?: string}>({});
+
+  // Clear field errors when user starts typing
+  const handleFieldChange = (field: 'email' | 'password') => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+    // Also clear general error when user starts typing
+    if (error) {
+      clearError();
+    }
+  };
+
+  // Clear errors on component mount
+  useEffect(() => {
+    clearError();
+    setFieldErrors({});
+  }, [clearError]);
 
   // Handle Basecamp callback on page load
   useEffect(() => {
@@ -25,11 +43,32 @@ const Login: React.FC = () => {
   const handleSubmit = async (values: LoginRequest) => {
     setIsSubmitting(true);
     clearError();
+    setFieldErrors({}); // Clear field-specific errors
     
     try {
       await login(values);
-    } catch (error) {
-      // Error is handled by the auth hook
+    } catch (error: any) {
+      // Handle field-specific errors
+      if (error.errorType) {
+        switch (error.errorType) {
+          case 'INVALID_EMAIL_FORMAT':
+          case 'EMAIL_NOT_FOUND':
+            setFieldErrors({ email: error.message });
+            break;
+          case 'INVALID_PASSWORD':
+            setFieldErrors({ password: error.message });
+            break;
+          case 'MISSING_FIELDS':
+            if (!values.email) {
+              setFieldErrors(prev => ({ ...prev, email: 'Email is required' }));
+            }
+            if (!values.password) {
+              setFieldErrors(prev => ({ ...prev, password: 'Password is required' }));
+            }
+            break;
+        }
+      }
+      // Error is also handled by the auth hook for general display
     } finally {
       setIsSubmitting(false);
     }
@@ -121,6 +160,8 @@ const Login: React.FC = () => {
           <Form.Item
             name="email"
             label="Email"
+            validateStatus={fieldErrors.email ? 'error' : ''}
+            help={fieldErrors.email}
             rules={[
               { required: true, message: 'Please input your email!' },
               { type: 'email', message: 'Please enter a valid email!' },
@@ -130,12 +171,15 @@ const Login: React.FC = () => {
               prefix={<UserOutlined />}
               placeholder="Enter your email"
               autoComplete="email"
+              onChange={() => handleFieldChange('email')}
             />
           </Form.Item>
 
           <Form.Item
             name="password"
             label="Password"
+            validateStatus={fieldErrors.password ? 'error' : ''}
+            help={fieldErrors.password}
             rules={[
               { required: true, message: 'Please input your password!' },
               { min: 6, message: 'Password must be at least 6 characters!' },
@@ -145,6 +189,7 @@ const Login: React.FC = () => {
               prefix={<LockOutlined />}
               placeholder="Enter your password"
               autoComplete="current-password"
+              onChange={() => handleFieldChange('password')}
             />
           </Form.Item>
 

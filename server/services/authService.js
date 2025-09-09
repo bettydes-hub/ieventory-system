@@ -61,22 +61,28 @@ class AuthService {
    */
   static async login(email, password) {
     try {
+      // Validate email format first
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(email)) {
+        throw new Error('INVALID_EMAIL_FORMAT');
+      }
+
       // Find user by email
       const user = await User.findOne({ where: { email: (email || '').toLowerCase() } });
 
       if (!user) {
-        throw new Error('Invalid email or password');
+        throw new Error('EMAIL_NOT_FOUND');
       }
 
       // Check if user is active
       if (!user.isActive) {
-        throw new Error('Account is deactivated');
+        throw new Error('ACCOUNT_DEACTIVATED');
       }
 
       // Verify password using model helper
       const isValidPassword = await user.checkPassword(password);
       if (!isValidPassword) {
-        throw new Error('Invalid email or password');
+        throw new Error('INVALID_PASSWORD');
       }
 
       // Generate token

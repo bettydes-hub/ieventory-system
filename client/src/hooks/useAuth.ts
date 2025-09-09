@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { useCallback, useEffect, useMemo } from 'react';
 import { RootState } from '@/store';
 import { authService } from '@/services/authService';
-import { loginStart, loginSuccess, loginFailure, logout as logoutAction, clearError, updateUser, clearAuth, showFirstTimeLogin, hideFirstTimeLogin, completeFirstTimeLogin } from '@/store/slices/authSlice';
+import { loginStart, loginSuccess, loginFailure, logout as logoutAction, clearError, updateUser, clearAuth, showFirstTimeLogin as showFirstTimeLoginAction, hideFirstTimeLogin, completeFirstTimeLogin } from '@/store/slices/authSlice';
 import { LoginRequest, User, BasecampLoginRequest, ChangePasswordRequest } from '@/types';
 
 // Enhanced error types
@@ -86,23 +86,53 @@ export const useAuth = () => {
       dispatch(loginStart());
     },
     onSuccess: (data) => {
+      console.log('Login success data:', data);
       dispatch(loginSuccess(data));
       
       // Check if this is a first-time login
       if ((data.user as any).isFirstLogin && !(data.user as any).passwordChanged) {
-        dispatch(showFirstTimeLogin());
+        dispatch(showFirstTimeLoginAction());
       } else {
         // Set up session timeout only if not first-time login
         setupSessionTimeout();
       }
     },
     onError: (error: any) => {
+      console.error('Login error in useAuth:', error);
       const authError: AuthError = {
         type: 'unknown',
         message: 'Login failed',
       };
 
-      if (error.response) {
+      // Handle the new error structure with errorType
+      if (error.errorType) {
+        console.log('Error type:', error.errorType);
+        switch (error.errorType) {
+          case 'INVALID_EMAIL_FORMAT':
+            authError.type = 'validation';
+            authError.message = 'Please enter a valid email address';
+            break;
+          case 'EMAIL_NOT_FOUND':
+            authError.type = 'unauthorized';
+            authError.message = 'No account found with this email address';
+            break;
+          case 'INVALID_PASSWORD':
+            authError.type = 'unauthorized';
+            authError.message = 'Incorrect password. Please try again';
+            break;
+          case 'ACCOUNT_DEACTIVATED':
+            authError.type = 'unauthorized';
+            authError.message = 'Your account has been deactivated. Please contact an administrator';
+            break;
+          case 'MISSING_FIELDS':
+            authError.type = 'validation';
+            authError.message = 'Email and password are required';
+            break;
+          default:
+            authError.type = 'unknown';
+            authError.message = error.message || 'Login failed';
+        }
+      } else if (error.response) {
         const status = error.response.status;
         const message = error.response.data?.message || 'Login failed';
         
@@ -269,7 +299,7 @@ export const useAuth = () => {
   }, [updateProfileMutation]);
 
   // Password change function
-  const changePassword = useCallback(async (data: { currentPassword: string; newPassword: string }) => {
+  const changePassword = useCallback(async (data: { currentPassword: string; newPassword: string; confirmPassword: string }) => {
     try {
       await changePasswordMutation.mutateAsync(data);
     } catch (error) {

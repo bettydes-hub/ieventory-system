@@ -19,10 +19,26 @@ export interface LoginResponse {
 export const authService = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     try {
+      console.log('Attempting login with credentials:', credentials);
       const response = await api.post('/auth/login', credentials);
-      return response.data;
+      console.log('Login response:', response.data);
+      
+      // Handle the backend response format where data is wrapped in a 'data' property
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Login failed');
+      }
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Login failed');
+      console.error('Login error:', error);
+      // Create a more detailed error object
+      const errorResponse = error.response?.data;
+      const errorObj = {
+        message: errorResponse?.message || 'Login failed',
+        errorType: errorResponse?.errorType || 'UNKNOWN_ERROR',
+        status: error.response?.status || 500
+      };
+      throw errorObj;
     }
   },
 
@@ -46,7 +62,7 @@ export const authService = {
   getProfile: async () => {
     try {
       const response = await api.get('/auth/profile');
-      return response.data;
+      return response.data.data || response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to get profile');
     }
@@ -55,7 +71,7 @@ export const authService = {
   updateProfile: async (data: any) => {
     try {
       const response = await api.put('/auth/profile', data);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update profile');
     }
@@ -64,7 +80,7 @@ export const authService = {
   basecampLogin: async (data: BasecampLoginRequest): Promise<LoginResponse> => {
     try {
       const response = await api.post('/auth/basecamp/callback', data);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error: any) {
       console.error('Basecamp login error:', error);
       throw new Error(error.response?.data?.message || 'Basecamp authentication failed');
