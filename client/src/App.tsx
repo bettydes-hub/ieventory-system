@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Provider } from 'react-redux';
 import { ConfigProvider } from 'antd';
@@ -180,10 +180,15 @@ const App: React.FC = () => {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
+<<<<<<< HEAD
+        <ConfigProvider theme={theme}>
+          <AppContent />
+=======
         <ConfigProvider theme={themeConfig}>
           <Router>
             <AppContent />
           </Router>
+>>>>>>> 35e97bf7a8598053700e0d128c9fb0f86e0022ea
         </ConfigProvider>
       </QueryClientProvider>
     </Provider>

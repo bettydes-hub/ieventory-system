@@ -259,7 +259,7 @@ const Login: React.FC = () => {
               Demo Credentials:
             </Text>
             <Text code style={{ fontSize: 11 }}>
-              Admin: admin@inventory.com / admin123
+              Admin: admin@ieventory.com / admin123
             </Text>
             <Text code style={{ fontSize: 11 }}>
               Employee: employee@inventory.com / employee123

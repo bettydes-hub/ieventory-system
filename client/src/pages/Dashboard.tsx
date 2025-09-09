@@ -188,7 +188,7 @@ const Dashboard: React.FC = () => {
           <Card
             title={
               <Space>
-                <TrendingUpOutlined style={{ color: '#1890ff' }} />
+                <RiseOutlined style={{ color: '#1890ff' }} />
                 Recent Activity
               </Space>
             }
@@ -246,3 +246,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
