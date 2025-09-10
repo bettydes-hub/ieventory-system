@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { config } from '@/config';
 import {
   calculateDashboardStats,
   calculateItemCategories,
@@ -9,7 +10,7 @@ import {
   getDeliveryStats,
 } from './localDataService';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = config.api.baseURL;
 
 export interface DashboardStats {
   totalUsers: number;

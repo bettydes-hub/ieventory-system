@@ -1,47 +1,50 @@
 import { useQuery } from 'react-query';
 
 // Mock data - replace with actual API calls
-const mockInventory = {
+const mockInventorySummary = {
   totalItems: 1250,
+  totalStores: 5,
+  totalSuppliers: 12,
+  lowStockItems: 8,
   availableItems: 1200,
   borrowedItems: 45,
   damagedItems: 5,
-  lowStockItems: 12,
 };
 
-const mockRecentActivity = [
+const mockLowStockAlerts = [
   {
     id: '1',
-    type: 'success',
-    message: 'Item returned successfully',
-    timestamp: '2024-01-20T10:30:00Z',
+    name: 'Laptop - Dell XPS 13',
+    quantity: 2,
+    minStockLevel: 5,
   },
   {
     id: '2',
-    type: 'info',
-    message: 'New item added to inventory',
-    timestamp: '2024-01-20T09:15:00Z',
+    name: 'USB Cable Type-C',
+    quantity: 1,
+    minStockLevel: 10,
   },
   {
     id: '3',
-    type: 'warning',
-    message: 'Low stock alert for Laptop - Dell XPS 13',
-    timestamp: '2024-01-20T08:45:00Z',
+    name: 'Monitor Stand',
+    quantity: 0,
+    minStockLevel: 3,
   },
 ];
 
 export const useInventory = () => {
-  const { data: inventory, isLoading } = useQuery('inventory', () => {
-    return Promise.resolve(mockInventory);
+  const { data: inventorySummary, isLoading: summaryLoading } = useQuery('inventorySummary', () => {
+    return Promise.resolve(mockInventorySummary);
   });
 
-  const { data: recentActivity } = useQuery('recentActivity', () => {
-    return Promise.resolve(mockRecentActivity);
+  const { data: lowStockAlerts, isLoading: alertsLoading } = useQuery('lowStockAlerts', () => {
+    return Promise.resolve(mockLowStockAlerts);
   });
 
   return {
-    inventory,
-    recentActivity,
-    isLoading,
+    inventorySummary,
+    summaryLoading,
+    lowStockAlerts,
+    alertsLoading,
   };
 };

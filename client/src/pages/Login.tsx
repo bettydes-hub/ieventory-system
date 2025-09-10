@@ -122,6 +122,8 @@ const Login: React.FC = () => {
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         padding: '20px',
       }}
+      role="main"
+      aria-label="Login page"
     >
       <Card
         style={{
@@ -129,6 +131,8 @@ const Login: React.FC = () => {
           maxWidth: 400,
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
         }}
+        role="form"
+        aria-label="Login form"
       >
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
@@ -172,6 +176,8 @@ const Login: React.FC = () => {
               placeholder="Enter your email"
               autoComplete="email"
               onChange={() => handleFieldChange('email')}
+              aria-label="Email address"
+              aria-required="true"
             />
           </Form.Item>
 
@@ -190,6 +196,8 @@ const Login: React.FC = () => {
               placeholder="Enter your password"
               autoComplete="current-password"
               onChange={() => handleFieldChange('password')}
+              aria-label="Password"
+              aria-required="true"
             />
           </Form.Item>
 
@@ -199,6 +207,7 @@ const Login: React.FC = () => {
               htmlType="submit"
               loading={loading || isSubmitting}
               style={{ width: '100%', height: 40 }}
+              aria-label="Sign in to your account"
             >
               Sign In
             </Button>

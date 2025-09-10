@@ -27,7 +27,8 @@
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.3",
-    "sequelize": "^6.37.3"
+    "sequelize": "^6.37.3",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",

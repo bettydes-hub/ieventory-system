@@ -1,26 +1,39 @@
 import api from './api';
 import { Item, CreateItemData, UpdateItemData, PaginatedResponse } from '@/types';
 
+// Helper function to standardize API response handling
+const handleApiResponse = (response: any) => {
+  // Check if response has success property and data wrapper
+  if (response.data && typeof response.data === 'object') {
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    // If no success property, return the data directly
+    return response.data;
+  }
+  return response.data;
+};
+
 export const inventoryService = {
   // Items
   getItems: async (params?: any): Promise<PaginatedResponse<Item>> => {
     const response = await api.get('/inventory/items', { params });
-    return response.data;
+    return handleApiResponse(response);
   },
 
   getItem: async (id: string): Promise<Item> => {
     const response = await api.get(`/inventory/items/${id}`);
-    return response.data;
+    return handleApiResponse(response);
   },
 
   createItem: async (data: CreateItemData): Promise<Item> => {
     const response = await api.post('/inventory/items', data);
-    return response.data;
+    return handleApiResponse(response);
   },
 
   updateItem: async (id: string, data: UpdateItemData): Promise<Item> => {
     const response = await api.put(`/inventory/items/${id}`, data);
-    return response.data;
+    return handleApiResponse(response);
   },
 
   deleteItem: async (id: string): Promise<void> => {
@@ -29,12 +42,12 @@ export const inventoryService = {
 
   getInventorySummary: async (): Promise<any> => {
     const response = await api.get('/inventory/summary');
-    return response.data;
+    return handleApiResponse(response);
   },
 
   getLowStockAlerts: async (): Promise<Item[]> => {
     const response = await api.get('/inventory/low-stock');
-    return response.data;
+    return handleApiResponse(response);
   },
 
   transferItem: async (data: {

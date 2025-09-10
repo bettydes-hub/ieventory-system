@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Row, Col, Card, Statistic, Table, List, Avatar, Tag, Typography, Space, Button } from 'antd';
 import {
   InboxOutlined,
@@ -9,13 +9,14 @@ import {
   TruckOutlined,
   RiseOutlined,
   FallOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons';
 import { useInventory } from '@/hooks/useInventory';
 import { useAuth } from '@/hooks/useAuth';
 
 const { Title, Text } = Typography;
 
-const Dashboard: React.FC = () => {
+const Dashboard: React.FC = memo(() => {
   const { user } = useAuth();
   const {
     inventorySummary,
@@ -24,7 +25,8 @@ const Dashboard: React.FC = () => {
     alertsLoading,
   } = useInventory();
 
-  const stats = [
+  // Memoized stats calculation for better performance
+  const stats = useMemo(() => [
     {
       title: 'Total Items',
       value: inventorySummary?.totalItems || 0,
@@ -49,7 +51,7 @@ const Dashboard: React.FC = () => {
       icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
       color: '#ff4d4f',
     },
-  ];
+  ], [inventorySummary]);
 
   const recentActivity = [
     {
@@ -188,7 +190,7 @@ const Dashboard: React.FC = () => {
           <Card
             title={
               <Space>
-                <TrendingUpOutlined style={{ color: '#1890ff' }} />
+                <LineChartOutlined style={{ color: '#1890ff' }} />
                 Recent Activity
               </Space>
             }
@@ -243,6 +245,8 @@ const Dashboard: React.FC = () => {
       </Card>
     </div>
   );
-};
+});
+
+Dashboard.displayName = 'Dashboard';
 
 export default Dashboard;

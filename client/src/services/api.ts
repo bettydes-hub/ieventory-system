@@ -1,10 +1,11 @@
 import axios from 'axios';
 import { message } from 'antd';
+import { config } from '@/config';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
-  timeout: 10000,
+  baseURL: config.api.baseURL,
+  timeout: config.api.timeout,
   headers: {
     'Content-Type': 'application/json',
   },

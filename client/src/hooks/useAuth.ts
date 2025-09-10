@@ -17,6 +17,25 @@ export interface AuthError {
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiry
 
+/**
+ * Custom hook for managing authentication state and operations
+ * 
+ * @returns {Object} Authentication state and methods
+ * @returns {boolean} isAuthenticated - Whether user is currently authenticated
+ * @returns {boolean} loading - Whether authentication is in progress
+ * @returns {User|null} user - Current user data
+ * @returns {string|null} token - Current authentication token
+ * @returns {string|null} error - Current error message
+ * @returns {Function} login - Function to login with email/password
+ * @returns {Function} basecampLogin - Function to login with Basecamp
+ * @returns {Function} logout - Function to logout user
+ * @returns {Function} clearError - Function to clear current error
+ * @returns {Function} changePassword - Function to change user password
+ * @returns {Function} updateProfile - Function to update user profile
+ * @returns {boolean} showFirstTimeLogin - Whether to show first-time login modal
+ * @returns {Function} hideFirstTimeLogin - Function to hide first-time login modal
+ * @returns {Function} completeFirstTimeLogin - Function to complete first-time login
+ */
 export const useAuth = () => {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
@@ -80,7 +99,10 @@ export const useAuth = () => {
     checkAuthStatus();
   }, [dispatch, setupSessionTimeout]);
 
-  // Enhanced login mutation with better error handling
+  /**
+   * Login mutation with enhanced error handling
+   * Handles first-time login detection and session management
+   */
   const loginMutation = useMutation(authService.login, {
     onMutate: () => {
       dispatch(loginStart());
@@ -215,7 +237,7 @@ export const useAuth = () => {
     'profile',
     authService.getProfile,
     {
-      enabled: isAuthenticated,
+      enabled: isAuthenticated && !!token, // Only run when authenticated AND has token
       retry: (failureCount, error: any) => {
         if (error?.response?.status === 401) {
           return false; // Don't retry on auth errors
@@ -359,7 +381,7 @@ export const useAuth = () => {
     user: user || profile,
     token,
     isAuthenticated,
-    loading: loading || loginMutation.isLoading || profileLoading,
+    loading: loading || loginMutation.isLoading,
     error,
     
     // Auth actions
