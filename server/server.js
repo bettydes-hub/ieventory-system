@@ -1,10 +1,16 @@
-require("dotenv").config();
+require("dotenv").config({ path: './.env' });
 
 const app = require("./app");
 const { testConnection } = require("./config/database");
 const { initializeDatabase } = require("./config/init-db");
 
+// Debug: Check environment variables
+console.log("🔍 Environment variables:");
+console.log("PORT from env:", process.env.PORT);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+
 const PORT = process.env.PORT || 5000;
+console.log("Final PORT:", PORT);
 
 // Initialize server
 const startServer = async () => {

@@ -8,7 +8,7 @@ const { Title, Text } = Typography;
 
 const Login: React.FC = () => {
   const [form] = Form.useForm();
-  const { login, basecampLogin, loading, error, clearError } = useAuth();
+  const { login, basecampLogin, loading, error, clearError, isAuthenticated, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{email?: string, password?: string}>({});
 
@@ -41,13 +41,17 @@ const Login: React.FC = () => {
   }, []);
 
   const handleSubmit = async (values: LoginRequest) => {
+    console.log('🔍 handleSubmit called with values:', values);
     setIsSubmitting(true);
     clearError();
     setFieldErrors({}); // Clear field-specific errors
     
     try {
+      console.log('🔍 Calling login function...');
       await login(values);
+      console.log('🔍 Login function completed successfully');
     } catch (error: any) {
+      console.log('🔍 Login function failed with error:', error);
       // Handle field-specific errors
       if (error.errorType) {
         switch (error.errorType) {
@@ -157,7 +161,11 @@ const Login: React.FC = () => {
         <Form
           form={form}
           name="login"
-          onFinish={handleSubmit}
+          onFinish={(values) => {
+            console.log('🔍 Form onFinish triggered with values:', values);
+            handleSubmit(values);
+            return false; // Prevent form submission
+          }}
           layout="vertical"
           size="large"
         >
@@ -170,6 +178,9 @@ const Login: React.FC = () => {
               { required: true, message: 'Please input your email!' },
               { type: 'email', message: 'Please enter a valid email!' },
             ]}
+            onChange={(e) => {
+              console.log('🔍 Email field changed:', e.target.value);
+            }}
           >
             <Input
               prefix={<UserOutlined />}
@@ -208,11 +219,63 @@ const Login: React.FC = () => {
               loading={loading || isSubmitting}
               style={{ width: '100%', height: 40 }}
               aria-label="Sign in to your account"
+              onClick={() => {
+                console.log('🔍 Sign In button clicked!');
+                console.log('🔍 Form values:', form.getFieldsValue());
+                console.log('🔍 Form validation status:', form.getFieldsError());
+              }}
             >
               Sign In
             </Button>
           </Form.Item>
         </Form>
+
+        {/* Debug Test Buttons - OUTSIDE the form */}
+        <div style={{ marginTop: 16 }}>
+          <Button
+            type="dashed"
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('🔍 TEST BUTTON CLICKED - Testing direct login');
+              console.log('🔍 Current state before login:', { isAuthenticated, loading, user });
+              
+              try {
+                const testValues = {
+                  email: 'admin@inventory.com',
+                  password: 'admin123'
+                };
+                console.log('🔍 Calling login function directly with:', testValues);
+                
+                // Call login directly without going through handleSubmit
+                const result = await login(testValues);
+                console.log('🔍 Login function completed successfully!', result);
+                console.log('🔍 State after login:', { isAuthenticated, loading, user });
+              } catch (error) {
+                console.log('🔍 Login function failed:', error);
+                console.log('🔍 State after failed login:', { isAuthenticated, loading, user });
+              }
+            }}
+            style={{ width: '100%', marginBottom: 8 }}
+          >
+            🧪 TEST LOGIN (Debug)
+          </Button>
+          
+          <Button
+            type="dashed"
+            onClick={() => {
+              console.log('🔍 Current auth state:', { 
+                isAuthenticated: isAuthenticated, 
+                loading: loading, 
+                user: user, 
+                error: error 
+              });
+            }}
+            style={{ width: '100%', marginBottom: 16 }}
+          >
+            🔍 CHECK AUTH STATE
+          </Button>
+        </div>
 
         <Divider style={{ margin: '24px 0' }}>
           <Text type="secondary">OR</Text>

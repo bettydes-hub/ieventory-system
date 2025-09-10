@@ -34,54 +34,7 @@ export const authService = {
     try {
       console.log('Attempting login with credentials:', credentials);
       
-      // Mock data for testing - remove this when backend is working
-      const mockUsers = {
-        'admin@inventory.com': {
-          user: {
-            id: '1',
-            name: 'Admin User',
-            email: 'admin@inventory.com',
-            role: 'Admin'
-          },
-          token: 'mock-admin-token-123'
-        },
-        'employee@inventory.com': {
-          user: {
-            id: '2',
-            name: 'Employee User',
-            email: 'employee@inventory.com',
-            role: 'Employee'
-          },
-          token: 'mock-employee-token-456'
-        },
-        'storekeeper@inventory.com': {
-          user: {
-            id: '3',
-            name: 'Store Keeper',
-            email: 'storekeeper@inventory.com',
-            role: 'Store Keeper'
-          },
-          token: 'mock-storekeeper-token-789'
-        },
-        'delivery@inventory.com': {
-          user: {
-            id: '4',
-            name: 'Delivery Staff',
-            email: 'delivery@inventory.com',
-            role: 'Delivery Staff'
-          },
-          token: 'mock-delivery-token-101'
-        }
-      };
-
-      // Check if user exists in mock data
-      if (mockUsers[credentials.email as keyof typeof mockUsers]) {
-        const userData = mockUsers[credentials.email as keyof typeof mockUsers];
-        console.log('Mock login successful:', userData);
-        return userData;
-      }
-
-      // If not found, try real API call
+      // Use real API call to connect to your database
       const response = await api.post('/auth/login', credentials);
       console.log('Login response:', response.data);
       
@@ -89,43 +42,62 @@ export const authService = {
     } catch (error: any) {
       console.error('Login error:', error);
       
-      // If it's a network error, use mock data as fallback
-      if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED') {
-        console.log('Network error detected, using mock data fallback');
-        const mockUsers = {
-          'admin@inventory.com': {
-            user: {
-              id: '1',
-              name: 'Admin User',
-              email: 'admin@inventory.com',
-              role: 'Admin'
-            },
-            token: 'mock-admin-token-123'
-          },
-          'employee@inventory.com': {
-            user: {
-              id: '2',
-              name: 'Employee User',
-              email: 'employee@inventory.com',
-              role: 'Employee'
-            },
-            token: 'mock-employee-token-456'
-          }
-        };
-
-        if (mockUsers[credentials.email as keyof typeof mockUsers]) {
-          return mockUsers[credentials.email as keyof typeof mockUsers];
+      // Handle different types of errors with specific messages
+      if (error.response?.data) {
+        const errorResponse = error.response.data;
+        const status = error.response.status;
+        
+        // Handle specific error types from backend
+        if (errorResponse.errorType === 'EMAIL_NOT_FOUND') {
+          throw {
+            message: '❌ Email not found! Please check your email address.',
+            errorType: 'EMAIL_NOT_FOUND',
+            status: status
+          };
+        } else if (errorResponse.errorType === 'INVALID_PASSWORD') {
+          throw {
+            message: '❌ Wrong password! Please check your password.',
+            errorType: 'INVALID_PASSWORD', 
+            status: status
+          };
+        } else if (errorResponse.errorType === 'ACCOUNT_DEACTIVATED') {
+          throw {
+            message: '❌ Account is deactivated! Please contact administrator.',
+            errorType: 'ACCOUNT_DEACTIVATED',
+            status: status
+          };
+        } else if (status === 401) {
+          throw {
+            message: '❌ Invalid credentials! Please check both email and password.',
+            errorType: 'INVALID_CREDENTIALS',
+            status: status
+          };
+        } else if (status === 422) {
+          throw {
+            message: '❌ Invalid input! Please check your email format.',
+            errorType: 'VALIDATION_ERROR',
+            status: status
+          };
+        } else {
+          throw {
+            message: `❌ Server error: ${errorResponse.message || 'Please try again later.'}`,
+            errorType: 'SERVER_ERROR',
+            status: status
+          };
         }
+      } else if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED') {
+        throw {
+          message: '❌ Cannot connect to server! Please check if backend is running.',
+          errorType: 'NETWORK_ERROR',
+          status: 0
+        };
+      } else {
+        throw {
+          message: '❌ Login failed! Please try again.',
+          errorType: 'UNKNOWN_ERROR',
+          status: 500
+        };
       }
-
-      // Create a more detailed error object
-      const errorResponse = error.response?.data;
-      const errorObj = {
-        message: errorResponse?.message || 'Login failed',
-        errorType: errorResponse?.errorType || 'UNKNOWN_ERROR',
-        status: error.response?.status || 500
-      };
-      throw errorObj;
     }
   },
 

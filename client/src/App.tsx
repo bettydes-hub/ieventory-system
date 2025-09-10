@@ -57,7 +57,10 @@ const queryClient = new QueryClient({
 const AppContent: React.FC = () => {
   const { isAuthenticated, loading, user, showFirstTimeLogin, hideFirstTimeLogin, completeFirstTimeLogin, error } = useAuth();
 
+  console.log('🔍 App render - Auth state:', { isAuthenticated, loading, user: user?.email, role: user?.role });
+
   if (loading) {
+    console.log('🔍 App showing loading spinner');
     return (
       <LoadingSpinner 
         size="large" 
@@ -68,8 +71,11 @@ const AppContent: React.FC = () => {
   }
 
   if (!isAuthenticated) {
+    console.log('🔍 App showing login page - not authenticated');
     return <Login />;
   }
+
+  console.log('🔍 App showing authenticated content for user:', user?.email);
 
   // Role-based routing
   const isEmployee = user?.role === 'Employee';

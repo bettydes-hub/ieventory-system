@@ -108,13 +108,16 @@ export const useAuth = () => {
       dispatch(loginStart());
     },
     onSuccess: (data) => {
-      console.log('Login success data:', data);
+      console.log('🎉 Login success data:', data);
+      console.log('🔍 Dispatching loginSuccess with:', JSON.stringify(data, null, 2));
       dispatch(loginSuccess(data));
       
       // Check if this is a first-time login
       if ((data.user as any).isFirstLogin && !(data.user as any).passwordChanged) {
+        console.log('🔍 First time login detected');
         dispatch(showFirstTimeLoginAction());
       } else {
+        console.log('🔍 Regular login - setting up session timeout');
         // Set up session timeout only if not first-time login
         setupSessionTimeout();
       }

@@ -3,18 +3,24 @@ require('dotenv').config();
 
 const LOG_SQL = (process.env.DB_LOG_SQL || '').toLowerCase() === 'true';
 
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: process.env.DB_STORAGE || './database.sqlite',
-  // Control SQL logging via env (DB_LOG_SQL=true to enable)
-  logging: LOG_SQL ? console.log : false,
-  pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
+// Use PostgreSQL with the new password from .env
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'inventory_db',
+  process.env.DB_USER || 'postgres',
+  process.env.DB_PASSWORD || 'Password', // Use the new password
+  {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    logging: LOG_SQL ? console.log : false,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
   }
-});
+);
 
 // Test the connection
 const testConnection = async () => {
